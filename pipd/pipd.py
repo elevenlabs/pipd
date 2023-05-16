@@ -1,12 +1,11 @@
-import os
-import glob
 import asyncio
-import time
+import glob
+import os
 import select
+import time
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from random import randint
 from typing import Callable, Iterable, Iterator, List, Optional, Sequence, TypeVar
-
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -17,16 +16,20 @@ def curry(fn: Callable) -> Callable:
     def fn_curried(*args, **kwargs):
         def _fn(arg0):
             return fn(arg0, *args, **kwargs)
-        return _fn
-    return fn_curried
-        
 
-def _pipe(items: Iterable[T], *fns: Callable) -> Iterator[U]:
+        return _fn
+
+    return fn_curried
+
+
+def _pipe(items: Iterable[T], *fns: Callable) -> Iterable[U]:
     for fn in fns:
         items = fn(items)
-    return items
+    return items  # type: ignore
 
-pipe = curry(_pipe) 
+
+pipe = curry(_pipe)
+
 
 def _batch(items: Iterable[T], size: int) -> Iterator[List[T]]:
     batch = []
@@ -38,6 +41,7 @@ def _batch(items: Iterable[T], size: int) -> Iterator[List[T]]:
     if batch:
         yield batch
 
+
 batch = curry(_batch)
 
 
@@ -46,13 +50,14 @@ def _unbatch(items: Iterable[Sequence[T]]) -> Iterator[T]:
         for item in b:
             yield item
 
+
 unbatch = curry(_unbatch)
 
 
 def pick(items: List[T], random: bool = False) -> T:
     idx = randint(0, len(items) - 1) if random else 0
     return items.pop(idx)
-    
+
 
 def _buffer(
     items: Iterator[T], size: int, start: int = 0, shuffle: bool = False
@@ -71,7 +76,9 @@ def _buffer(
     while len(buffer) > 0:
         yield pick(buffer)
 
-buffer = curry(_buffer) 
+
+buffer = curry(_buffer)
+
 
 def _map(
     items: Iterable[T],
@@ -96,55 +103,58 @@ def _map(
             futures = {executor.submit(fn, item) for item in items_batch}
             yield from (future.result() for future in as_completed(futures))
 
+
 map = curry(_map)
+
 
 def _sleep(items: Iterable[T], seconds: float) -> Iterator[T]:
     for item in items:
         time.sleep(seconds)
         yield item
 
+
 sleep = curry(_sleep)
 
 
 def watchdir(
-    path: str, 
-    changes: Sequence[int] = [1] # default to Change.added == 1 
+    path: str, changes: Sequence[int] = [1]  # default to watchgod.Change.added == 1
 ) -> Iterator[str]:
-    try: 
-        from watchgod import awatch, Change 
+    try:
+        from watchgod import awatch
     except ImportError:
-        raise ImportError('watchgod is required to use watch')
+        raise ImportError("watchgod is required to use watch")
     loop = asyncio.get_event_loop()
     async_generator = awatch(path)
     while True:
         for change, filepath in loop.run_until_complete(async_generator.__anext__()):
-            if change in changes: 
+            if change in changes:
                 yield filepath
 
 
 def readf(filepath: str, watch: bool = False) -> Iterator[str]:
-    files = glob.glob(filepath) 
+    files = glob.glob(filepath)
     for file in files:
-        yield file 
+        yield file
     if watch:
-        yield from watchdir(os.path.dirname(filepath)) 
+        yield from watchdir(os.path.dirname(filepath))
 
 
 def readl(filename: str, watch: bool = False) -> Iterator[str]:
-    with open(filename, 'r') as file:
+    with open(filename, "r") as file:
         while True:
             line = file.readline()
             if line:
                 yield line.strip()
             elif watch:
-                select.select([file], [], []) # Wait until there is more data to read
+                select.select([file], [], [])  # Wait until there is more data to read
             else:
                 break
 
 
-def _writel(items: Iterable[str], filename: str) -> None: 
-    with open(filename, 'w') as f:
+def _writel(items: Iterable[str], filename: str) -> None:
+    with open(filename, "w") as f:
         for item in items:
-            f.write(item + '\n') 
+            f.write(item + "\n")
+
 
 writel = curry(_writel)
