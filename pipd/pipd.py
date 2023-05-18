@@ -84,8 +84,8 @@ def _map(
     items: Iterable[T],
     fn: Callable[[T], U],
     mode: Optional[str] = None,
+    num_workers: Optional[int] = None,
     batch_size: Optional[int] = None,
-    max_workers: Optional[int] = None,
 ) -> Iterator[U]:
     assert mode in [None, "multithread", "multiprocess"]
 
@@ -95,16 +95,47 @@ def _map(
 
     executors = dict(multithread=ThreadPoolExecutor, multiprocess=ProcessPoolExecutor)
 
-    num_workers = max_workers or os.cpu_count()
+    num_workers = num_workers or os.cpu_count()
     batch_size = batch_size or num_workers
 
-    with executors[mode](max_workers=max_workers) as executor:
+    with executors[mode](max_workers=num_workers) as executor:
         for items_batch in batch(batch_size)(items):  # type: ignore
             futures = {executor.submit(fn, item) for item in items_batch}
             yield from (future.result() for future in as_completed(futures))
 
 
 map = curry(_map)
+
+
+def _limit(items: Iterable[T], limit: int = 10**100) -> Iterator[T]:
+    for count, item in enumerate(items):
+        if count < limit:
+            yield item
+
+
+limit = curry(_limit)
+
+
+def _log(items: Iterable[T], limit: int = 10**100) -> Iterator[T]:
+    for count, item in enumerate(items):
+        if count < limit:
+            print(item)
+        yield item
+
+
+log = curry(_log)
+
+
+def _tqdm(items: Iterable[T], *args, **kwargs) -> Iterator[T]:
+    try:
+        from tqdm import tqdm as progressbar
+    except ImportError:
+        raise ImportError("tqdm is required to use tqdm")
+    for item in progressbar(items, *args, **kwargs):
+        yield item
+
+
+tqdm = curry(_tqdm)
 
 
 def _sleep(items: Iterable[T], seconds: float) -> Iterator[T]:
@@ -158,3 +189,8 @@ def _writel(items: Iterable[str], filename: str) -> None:
 
 
 writel = curry(_writel)
+
+
+def run(items: Iterable[T]) -> None:
+    for item in items:
+        pass
