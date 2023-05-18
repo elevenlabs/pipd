@@ -11,6 +11,20 @@ T = TypeVar("T")
 U = TypeVar("U")
 
 
+def log_and_continue(exception: Exception):
+    print(repr(exception))
+
+
+def with_handler(fn: Callable, handler: Callable) -> Callable:
+    def wrapper(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except Exception as e:
+            handler(e)
+
+    return wrapper
+
+
 def curry(fn: Callable) -> Callable:
     # fn(a0, a1, a2) => curry(fn)(a1, a2)(a0)
     def fn_curried(*args, **kwargs):
@@ -86,11 +100,12 @@ def _map(
     mode: Optional[str] = None,
     num_workers: Optional[int] = None,
     batch_size: Optional[int] = None,
+    handler: Callable = log_and_continue,
 ) -> Iterator[U]:
     assert mode in [None, "multithread", "multiprocess"]
 
     if mode is None:
-        yield from (fn(item) for item in items)
+        yield from (with_handler(fn, handler)(item) for item in items)
         return
 
     executors = dict(multithread=ThreadPoolExecutor, multiprocess=ProcessPoolExecutor)
@@ -100,11 +115,17 @@ def _map(
 
     with executors[mode](max_workers=num_workers) as executor:
         for items_batch in batch(batch_size)(items):  # type: ignore
-            futures = {executor.submit(fn, item) for item in items_batch}
-            yield from (future.result() for future in as_completed(futures))
+            fs = {executor.submit(fn, item) for item in items_batch}
+            yield from (with_handler(f.result, handler)() for f in as_completed(fs))
 
 
-map = curry(_map)
+def _filter(items: Iterable[T], fn: Callable[[T], bool]) -> Iterator[T]:
+    for item in items:
+        if fn(item):
+            yield item
+
+
+filter = curry(_filter)
 
 
 def _limit(items: Iterable[T], limit: int = 10**100) -> Iterator[T]:
