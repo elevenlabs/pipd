@@ -119,6 +119,9 @@ def _map(
             yield from (with_handler(f.result, handler)() for f in as_completed(fs))
 
 
+map = curry(_map)
+
+
 def _filter(items: Iterable[T], fn: Callable[[T], bool]) -> Iterator[T]:
     for item in items:
         if fn(item):
