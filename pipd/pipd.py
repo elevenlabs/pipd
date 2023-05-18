@@ -15,16 +15,6 @@ def log_and_continue(exception: Exception):
     print(repr(exception))
 
 
-def with_handler(fn: Callable, handler: Callable) -> Callable:
-    def wrapper(*args, **kwargs):
-        try:
-            return fn(*args, **kwargs)
-        except Exception as e:
-            handler(e)
-
-    return wrapper
-
-
 def curry(fn: Callable) -> Callable:
     # fn(a0, a1, a2) => curry(fn)(a1, a2)(a0)
     def fn_curried(*args, **kwargs):
@@ -105,7 +95,11 @@ def _map(
     assert mode in [None, "multithread", "multiprocess"]
 
     if mode is None:
-        yield from (with_handler(fn, handler)(item) for item in items)
+        for item in items:
+            try:
+                yield fn(item)
+            except Exception as e:
+                handler(e)
         return
 
     executors = dict(multithread=ThreadPoolExecutor, multiprocess=ProcessPoolExecutor)
@@ -115,8 +109,12 @@ def _map(
 
     with executors[mode](max_workers=num_workers) as executor:
         for items_batch in batch(batch_size)(items):  # type: ignore
-            fs = {executor.submit(fn, item) for item in items_batch}
-            yield from (with_handler(f.result, handler)() for f in as_completed(fs))
+            futures = {executor.submit(fn, item) for item in items_batch}
+            for future in as_completed(futures):
+                try:
+                    yield future.result()
+                except Exception as e:
+                    handler(e)
 
 
 map = curry(_map)
