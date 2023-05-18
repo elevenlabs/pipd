@@ -194,8 +194,8 @@ def readf(filepath: str, watch: bool = False) -> Iterator[str]:
         yield from watchdir(os.path.dirname(filepath))
 
 
-def readl(filename: str, watch: bool = False) -> Iterator[str]:
-    with open(filename, "r") as file:
+def readl(filepath: str, watch: bool = False) -> Iterator[str]:
+    with open(filepath, "r") as file:
         while True:
             line = file.readline()
             if line:
@@ -206,13 +206,32 @@ def readl(filename: str, watch: bool = False) -> Iterator[str]:
                 break
 
 
-def _writel(items: Iterable[str], filename: str) -> None:
-    with open(filename, "w") as f:
+def _writel(items: Iterable[str], filepath: str) -> Iterator[str]:
+    with open(filepath, "w") as f:
         for item in items:
             f.write(item + "\n")
+            yield item
 
 
 writel = curry(_writel)
+
+
+def _filter_cached(
+    items: Iterable[T],
+    filepath: str,
+    key: Optional[Callable] = None,
+) -> Iterator[T]:
+    cache = set(readl(filepath)) if os.path.exists(filepath) else set()
+    with open(filepath, "a") as file:
+        for item in items:
+            value = key(item) if key is not None else item
+            if value not in cache:
+                cache.add(value)
+                file.write(value + "\n")
+                yield item
+
+
+filter_cached = curry(_filter_cached)
 
 
 def run(items: Iterable[T]) -> None:
