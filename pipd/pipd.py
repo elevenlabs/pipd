@@ -3,7 +3,12 @@ import glob
 import os
 import select
 import time
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from concurrent.futures import (
+    FIRST_COMPLETED,
+    ProcessPoolExecutor,
+    ThreadPoolExecutor,
+    wait,
+)
 from random import randint
 from typing import Callable, Iterable, Iterator, List, Optional, Sequence, TypeVar
 
@@ -87,14 +92,14 @@ buffer = curry(_buffer)
 def _map(
     items: Iterable[T],
     fn: Callable[[T], U],
-    mode: Optional[str] = None,
-    num_workers: Optional[int] = None,
-    batch_size: Optional[int] = None,
+    num_workers: int = 0,
+    buffer_size: Optional[int] = None,
+    mode: str = "multithread",
     handler: Callable = log_and_continue,
 ) -> Iterator[U]:
-    assert mode in [None, "multithread", "multiprocess"]
+    assert mode in ["multithread", "multiprocess"]
 
-    if mode is None:
+    if num_workers == 0:
         for item in items:
             try:
                 yield fn(item)
@@ -104,17 +109,27 @@ def _map(
 
     executors = dict(multithread=ThreadPoolExecutor, multiprocess=ProcessPoolExecutor)
 
-    num_workers = num_workers or os.cpu_count()
-    batch_size = batch_size or num_workers
-
     with executors[mode](max_workers=num_workers) as executor:
-        for items_batch in batch(batch_size)(items):  # type: ignore
-            futures = {executor.submit(fn, item) for item in items_batch}
-            for future in as_completed(futures):
-                try:
-                    yield future.result()
-                except Exception as e:
-                    handler(e)
+        futures = set()
+        buffer_size = buffer_size or num_workers
+        for item in items:
+            # Fill up workers
+            futures.add(executor.submit(fn, item))
+            # If all workers are busy, wait for one to finish
+            if len(futures) == buffer_size:
+                # Wait for one to finish, yield done, override futures with remaining
+                done, futures = wait(futures, return_when=FIRST_COMPLETED)
+                for future in done:
+                    try:
+                        yield future.result()
+                    except Exception as e:
+                        handler(e)
+        # Yield remaining results
+        for future in futures:
+            try:
+                yield future.result()
+            except Exception as e:
+                handler(e)
 
 
 map = curry(_map)
@@ -127,6 +142,23 @@ def _filter(items: Iterable[T], fn: Callable[[T], bool]) -> Iterator[T]:
 
 
 filter = curry(_filter)
+
+
+def _unpipe(
+    items: Iterable[T],
+    fn: Callable[[T], U],
+    num_workers: int = 1,
+    mode: str = "multithread",
+) -> Iterator[T]:
+    assert mode in ["multithread", "multiprocess"]
+    executors = dict(multithread=ThreadPoolExecutor, multiprocess=ProcessPoolExecutor)
+    with executors[mode](max_workers=num_workers) as executor:
+        for item in items:
+            executor.submit(fn, item)
+            yield item
+
+
+unpipe = curry(_unpipe)
 
 
 def _limit(items: Iterable[T], limit: int = 10**100) -> Iterator[T]:
