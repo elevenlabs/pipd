@@ -115,9 +115,8 @@ def _map(
         for item in items:
             # Fill up workers
             futures.add(executor.submit(fn, item))
-            # If all workers are busy, wait for one to finish
+            # If all busy, wait one to finish, then yield done and override remaining
             if len(futures) == buffer:
-                # Wait for one to finish, yield done, override futures with remaining
                 done, futures = wait(futures, return_when=FIRST_COMPLETED)
                 for future in done:
                     try:
