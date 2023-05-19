@@ -93,7 +93,7 @@ def _map(
     items: Iterable[T],
     fn: Callable[[T], U],
     num_workers: int = 0,
-    buffer_size: Optional[int] = None,
+    buffer: Optional[int] = None,
     mode: str = "multithread",
     handler: Callable = log_and_continue,
 ) -> Iterator[U]:
@@ -111,12 +111,12 @@ def _map(
 
     with executors[mode](max_workers=num_workers) as executor:
         futures = set()
-        buffer_size = buffer_size or num_workers
+        buffer = buffer or num_workers
         for item in items:
             # Fill up workers
             futures.add(executor.submit(fn, item))
             # If all workers are busy, wait for one to finish
-            if len(futures) == buffer_size:
+            if len(futures) == buffer:
                 # Wait for one to finish, yield done, override futures with remaining
                 done, futures = wait(futures, return_when=FIRST_COMPLETED)
                 for future in done:
