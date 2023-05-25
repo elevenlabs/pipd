@@ -1,7 +1,7 @@
 ## ⚙️ Install
 
 ```bash
-pip install git+ssh://git@github.com/elevenlabs/pipd.git
+pip install pipd
 ```
 
 ## Usage
