@@ -10,7 +10,18 @@ from concurrent.futures import (
     wait,
 )
 from random import randint
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Sequence, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    TypeVar,
+    Union,
+)
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -199,8 +210,9 @@ shuffle = as_pipe(_shuffle)
 
 def _limit(items: Iterable[T], limit: int = 10**100) -> Iterator[T]:
     for count, item in enumerate(items):
-        if count < limit:
-            yield item
+        if count >= limit:
+            return
+        yield item
 
 
 limit = as_pipe(_limit)
@@ -309,3 +321,44 @@ def _filter_cached(
 
 
 filter_cached = as_pipe(_filter_cached)
+
+
+def _write_csv(
+    items: Iterable[Union[Dict[str, Any], Sequence[Any]]], filepath: str
+) -> Iterable[Union[Dict[str, Any], Sequence[Any]]]:
+    import csv
+
+    with open(filepath, "w", newline="") as f:
+        writer = csv.writer(f)
+
+        for i, item in enumerate(items):
+            if isinstance(item, dict):
+                if i == 0:  # Write headers only for the first dictionary item
+                    writer.writerow(item.keys())
+                item = item.values()  # type: ignore
+            writer.writerow(item)
+            yield item
+
+
+write_csv = as_pipe(_write_csv)
+
+
+def _read_csv(
+    _, filepath: str, header: Union[bool, Sequence[str]] = False
+) -> Iterable[Union[Dict[str, str], List[str]]]:
+    import csv
+
+    with open(filepath, "r") as f:
+        if header:
+            fieldnames = header if isinstance(header, Sequence) else None
+            yield from csv.DictReader(f, fieldnames=fieldnames)
+        else:
+            yield from csv.reader(f)
+
+
+read_csv = as_pipe(_read_csv)
+
+
+class ReadCSV(Pipe):
+    def __init__(self, *args, **kwargs):
+        super().__init__(read_csv(*args, **kwargs)())
