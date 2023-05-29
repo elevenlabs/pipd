@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 setup(
     name="pipd",
     packages=find_packages(exclude=[]),
-    version="0.0.1",
+    version="0.0.2",
     description="Utility functions for python data pipelines.",
     long_description_content_type="text/markdown",
     author="ElevenLabs",
