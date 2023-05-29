@@ -42,7 +42,7 @@ class Pipe:
 
     def __call__(self):
         # Exhaust iterator
-        for _ in self.items:
+        for _ in self:
             pass
 
     @classmethod
@@ -63,55 +63,6 @@ def as_pipe(fn: Callable, name: Optional[str] = None) -> Callable:
         function=fn_curried,
     )
     return fn_curried
-
-
-def _batch(items: Iterable[T], size: int) -> Iterator[List[T]]:
-    batch = []
-    for item in items:
-        batch.append(item)
-        if len(batch) == size:
-            yield batch
-            batch = []
-    if batch:
-        yield batch
-
-
-batch = as_pipe(_batch)
-
-
-def _unbatch(items: Iterable[Sequence[T]]) -> Iterator[T]:
-    for b in items:
-        for item in b:
-            yield item
-
-
-unbatch = as_pipe(_unbatch)
-
-
-def pick(items: List[T], random: bool = False) -> T:
-    idx = randint(0, len(items) - 1) if random else 0
-    return items.pop(idx)
-
-
-def _buffer(
-    items: Iterator[T], size: int, start: int = 0, shuffle: bool = False
-) -> Iterator[T]:
-    buffer = []
-    for item in items:
-        buffer.append(item)
-        if len(buffer) < size:
-            try:
-                buffer.append(next(items))
-            except StopIteration:
-                pass
-        if len(buffer) >= start:
-            yield pick(buffer, random=shuffle)
-    # Empty buffer at the end
-    while len(buffer) > 0:
-        yield pick(buffer)
-
-
-buffer = as_pipe(_buffer)
 
 
 def _map(
@@ -159,22 +110,35 @@ def _map(
 map = as_pipe(_map)
 
 
-def _filter(items: Iterable[T], fn: Callable[[T], bool]) -> Iterator[T]:
-    for item in items:
-        if fn(item):
+def _filter(
+    items: Iterable[T], fn: Callable[[T], bool], *args, **kwargs
+) -> Iterator[T]:
+    for item, keep in _map(items, lambda x: (x, fn(x)), *args, **kwargs):
+        if keep:
             yield item
 
 
 filter = as_pipe(_filter)
 
 
-def _unpipe(
+def _side(
     items: Iterable[T],
     fn: Callable[[T], U],
-    num_workers: int = 1,
+    num_workers: int = 0,
     mode: str = "multithread",
+    handler: Callable = log_and_continue,
 ) -> Iterator[T]:
     assert mode in ["multithread", "multiprocess"]
+
+    if num_workers == 0:
+        for item in items:
+            try:
+                fn(item)
+            except Exception as e:
+                handler(e)
+            yield item
+        return
+
     executors = dict(multithread=ThreadPoolExecutor, multiprocess=ProcessPoolExecutor)
     with executors[mode](max_workers=num_workers) as executor:
         for item in items:
@@ -182,7 +146,55 @@ def _unpipe(
             yield item
 
 
-unpipe = as_pipe(_unpipe)
+side = as_pipe(_side)
+
+
+def _batch(items: Iterable[T], size: int) -> Iterator[List[T]]:
+    batch = []
+    for item in items:
+        batch.append(item)
+        if len(batch) == size:
+            yield batch
+            batch = []
+    if batch:
+        yield batch
+
+
+batch = as_pipe(_batch)
+
+
+def _unbatch(items: Iterable[Sequence[T]]) -> Iterator[T]:
+    for b in items:
+        for item in b:
+            yield item
+
+
+unbatch = as_pipe(_unbatch)
+
+
+def pick(items: List[T], random: bool = False) -> T:
+    idx = randint(0, len(items) - 1) if random else 0
+    return items.pop(idx)
+
+
+def _shuffle(items: Iterator[T], size: int, start: Optional[int] = None) -> Iterator[T]:
+    start = start or size
+    buffer = []
+    for item in items:
+        buffer.append(item)
+        if len(buffer) < size:
+            try:
+                buffer.append(next(items))
+            except StopIteration:
+                pass
+        if len(buffer) >= start:
+            yield pick(buffer, random=True)
+    # Empty buffer at the end
+    while len(buffer) > 0:
+        yield pick(buffer)
+
+
+shuffle = as_pipe(_shuffle)
 
 
 def _limit(items: Iterable[T], limit: int = 10**100) -> Iterator[T]:
@@ -194,11 +206,8 @@ def _limit(items: Iterable[T], limit: int = 10**100) -> Iterator[T]:
 limit = as_pipe(_limit)
 
 
-def _log(items: Iterable[T], limit: int = 10**100) -> Iterator[T]:
-    for count, item in enumerate(items):
-        if count < limit:
-            print(item)
-        yield item
+def _log(items: Iterable[T], fn: Callable[[T], None] = print) -> Iterator[T]:
+    return _side(items, fn)
 
 
 log = as_pipe(_log)
@@ -217,9 +226,7 @@ tqdm = as_pipe(_tqdm)
 
 
 def _sleep(items: Iterable[T], seconds: float) -> Iterator[T]:
-    for item in items:
-        time.sleep(seconds)
-        yield item
+    return _side(items, lambda _: time.sleep(seconds))
 
 
 sleep = as_pipe(_sleep)

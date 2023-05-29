@@ -32,53 +32,6 @@ _Consume/run entire pipeline_
 pipe()
 ```
 
-### `batch`
-```py
-from pipd import Pipe
-
-pipe = Pipe(1, 2, 3, 4, 5).batch(2)
-
-print(next(pipe))
-print(next(pipe))
-print(next(pipe))
-```
-
-<details> <summary> Show output </summary>
-
-```py
-[1, 2]
-[3, 4]
-[5]
-```
-
-</details>
-
-### `unbatch`
-
-```py
-from pipd import Pipe
-
-pipe = Pipe([1, 2], [3], [4, 5]).unbatch()
-
-print(next(pipe))
-print(next(pipe))
-print(next(pipe))
-print(next(pipe))
-print(next(pipe))
-```
-
-<details> <summary> Show output </summary>
-
-```py
-1
-2
-3
-4
-5
-```
-
-</details>
-
 
 ### `map`
 ```py
@@ -142,15 +95,127 @@ print(next(pipe))
 
 </details>
 
-### `unpipe`
+### `side`
+
+Applies a function on each item in the pipeline without changing the item, useful for logging, saving state, etc.
+```py
+from pipd import Pipe
+
+pipe = Pipe(1, 2, 3).side(lambda x: print('side', x))
+
+print(next(pipe))
+print(next(pipe))
+```
+
+<details> <summary> Show output </summary>
+
+```py
+side 1
+1
+side 2
+2
+```
+
+</details>
+
+### `batch`
+```py
+from pipd import Pipe
+
+pipe = Pipe(1, 2, 3, 4, 5).batch(2)
+
+print(next(pipe))
+print(next(pipe))
+print(next(pipe))
+```
+
+<details> <summary> Show output </summary>
+
+```py
+[1, 2]
+[3, 4]
+[5]
+```
+
+</details>
+
+### `unbatch`
+
+```py
+from pipd import Pipe
+
+pipe = Pipe([1, 2], [3], [4, 5]).unbatch()
+
+print(next(pipe))
+print(next(pipe))
+print(next(pipe))
+print(next(pipe))
+print(next(pipe))
+```
+
+<details> <summary> Show output </summary>
+
+```py
+1
+2
+3
+4
+5
+```
+
+</details>
+
+### `log`
+
+```py
+from pipd import Pipe
+
+pipe = Pipe(range(10)).log()
+pipe() # run the pipeline
+```
+
+<details> <summary> Show output </summary>
+
+```py
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+```
+
+</details>
 
 ### `limit`
+```py
+from pipd import Pipe
+
+pipe = Pipe(range(10)).limit(5).log()
+pipe() # run the pipeline
+```
+
+<details> <summary> Show output </summary>
+
+```py
+0
+1
+2
+3
+4
+```
+
+</details>
 
 ### `tqdm`
 
-### `buffer`
-
 ### `sleep`
+
+### `shuffle`
 
 ### `Readf`, `readf`
 
