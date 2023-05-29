@@ -10,7 +10,7 @@ from concurrent.futures import (
     wait,
 )
 from random import randint
-from typing import Callable, Iterable, Iterator, List, Optional, Sequence, TypeVar
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, Sequence, TypeVar
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -20,24 +20,49 @@ def log_and_continue(exception: Exception):
     print(repr(exception))
 
 
-def curry(fn: Callable) -> Callable:
-    # fn(a0, a1, a2) => curry(fn)(a1, a2)(a0)
+class Pipe:
+    functions: Dict[str, Callable] = {}
+
+    def __init__(self, *items):
+        if len(items) == 1 and isinstance(items[0], Iterable):
+            items = items[0]
+        self.items = iter(items)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.items)
+
+    def __getattr__(self, name):
+        def method(*args, **kwargs):
+            return self.functions[name](*args, **kwargs)(self.items)
+
+        return method
+
+    def __call__(self):
+        # Exhaust iterator
+        for _ in self.items:
+            pass
+
+    @classmethod
+    def add_function(cls, name: str, function: Callable):
+        cls.functions[name] = function
+
+
+def as_pipe(fn: Callable, name: Optional[str] = None) -> Callable:
     def fn_curried(*args, **kwargs):
-        def _fn(arg0):
-            return fn(arg0, *args, **kwargs)
+        def _fn(items: Optional[Iterable[T]] = None):
+            return Pipe(fn(items, *args, **kwargs))
 
         return _fn
 
+    Pipe.add_function(
+        # If name is None we assume the function is named _name and remove the _
+        name=fn.__name__[1:] if name is None else name,
+        function=fn_curried,
+    )
     return fn_curried
-
-
-def _pipe(items: Iterable[T], *fns: Callable) -> Iterable[U]:
-    for fn in fns:
-        items = fn(items)
-    return items  # type: ignore
-
-
-pipe = curry(_pipe)
 
 
 def _batch(items: Iterable[T], size: int) -> Iterator[List[T]]:
@@ -51,7 +76,7 @@ def _batch(items: Iterable[T], size: int) -> Iterator[List[T]]:
         yield batch
 
 
-batch = curry(_batch)
+batch = as_pipe(_batch)
 
 
 def _unbatch(items: Iterable[Sequence[T]]) -> Iterator[T]:
@@ -60,7 +85,7 @@ def _unbatch(items: Iterable[Sequence[T]]) -> Iterator[T]:
             yield item
 
 
-unbatch = curry(_unbatch)
+unbatch = as_pipe(_unbatch)
 
 
 def pick(items: List[T], random: bool = False) -> T:
@@ -86,7 +111,7 @@ def _buffer(
         yield pick(buffer)
 
 
-buffer = curry(_buffer)
+buffer = as_pipe(_buffer)
 
 
 def _map(
@@ -131,7 +156,7 @@ def _map(
                 handler(e)
 
 
-map = curry(_map)
+map = as_pipe(_map)
 
 
 def _filter(items: Iterable[T], fn: Callable[[T], bool]) -> Iterator[T]:
@@ -140,7 +165,7 @@ def _filter(items: Iterable[T], fn: Callable[[T], bool]) -> Iterator[T]:
             yield item
 
 
-filter = curry(_filter)
+filter = as_pipe(_filter)
 
 
 def _unpipe(
@@ -157,7 +182,7 @@ def _unpipe(
             yield item
 
 
-unpipe = curry(_unpipe)
+unpipe = as_pipe(_unpipe)
 
 
 def _limit(items: Iterable[T], limit: int = 10**100) -> Iterator[T]:
@@ -166,7 +191,7 @@ def _limit(items: Iterable[T], limit: int = 10**100) -> Iterator[T]:
             yield item
 
 
-limit = curry(_limit)
+limit = as_pipe(_limit)
 
 
 def _log(items: Iterable[T], limit: int = 10**100) -> Iterator[T]:
@@ -176,7 +201,7 @@ def _log(items: Iterable[T], limit: int = 10**100) -> Iterator[T]:
         yield item
 
 
-log = curry(_log)
+log = as_pipe(_log)
 
 
 def _tqdm(items: Iterable[T], *args, **kwargs) -> Iterator[T]:
@@ -188,7 +213,7 @@ def _tqdm(items: Iterable[T], *args, **kwargs) -> Iterator[T]:
         yield item
 
 
-tqdm = curry(_tqdm)
+tqdm = as_pipe(_tqdm)
 
 
 def _sleep(items: Iterable[T], seconds: float) -> Iterator[T]:
@@ -197,7 +222,7 @@ def _sleep(items: Iterable[T], seconds: float) -> Iterator[T]:
         yield item
 
 
-sleep = curry(_sleep)
+sleep = as_pipe(_sleep)
 
 
 def watchdir(
@@ -215,7 +240,7 @@ def watchdir(
                 yield filepath
 
 
-def readf(filepath: str, watch: bool = False) -> Iterator[str]:
+def _readf(_, filepath: str, watch: bool = False) -> Iterator[str]:
     files = glob.glob(filepath)
     for file in files:
         yield file
@@ -223,7 +248,15 @@ def readf(filepath: str, watch: bool = False) -> Iterator[str]:
         yield from watchdir(os.path.dirname(filepath))
 
 
-def readl(filepath: str, watch: bool = False) -> Iterator[str]:
+readf = as_pipe(_readf)
+
+
+class Readf(Pipe):
+    def __init__(self, *args, **kwargs):
+        super().__init__(readf(*args, **kwargs)())
+
+
+def _readl(_, filepath: str, watch: bool = False) -> Iterator[str]:
     with open(filepath, "r") as file:
         while True:
             line = file.readline()
@@ -235,6 +268,14 @@ def readl(filepath: str, watch: bool = False) -> Iterator[str]:
                 break
 
 
+readl = as_pipe(_readl)
+
+
+class Readl(Pipe):
+    def __init__(self, *args, **kwargs):
+        super().__init__(readl(*args, **kwargs)())
+
+
 def _writel(items: Iterable[str], filepath: str) -> Iterator[str]:
     with open(filepath, "w") as f:
         for item in items:
@@ -242,7 +283,7 @@ def _writel(items: Iterable[str], filepath: str) -> Iterator[str]:
             yield item
 
 
-writel = curry(_writel)
+writel = as_pipe(_writel)
 
 
 def _filter_cached(
@@ -260,9 +301,4 @@ def _filter_cached(
                 yield item
 
 
-filter_cached = curry(_filter_cached)
-
-
-def run(items: Iterable[T]) -> None:
-    for item in items:
-        pass
+filter_cached = as_pipe(_filter_cached)
