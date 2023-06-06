@@ -26,3 +26,10 @@ def test_add():
     pipe1 = Pipe(4, 5, 6, 7)
     pipe = pipe0 + pipe1
     assert list(pipe) == [0, 1, 2, 3, 4, 5, 6, 7]
+
+
+def test_merge():
+    pipe0 = Pipe(0, 0, 0, 0, 0, 0)
+    pipe1 = Pipe(1, 1, 1, 1, 1, 1)
+    pipe = Pipe.merge(pipe0, pipe1, weights=[3, 1])
+    print(list(pipe))

@@ -45,7 +45,7 @@ def test_unbatch():
 
 def test_shuffle():
     pipe = Pipe(range(5)).shuffle(2)
-    assert list(pipe) != [0, 1, 2, 3, 4]
+    assert sorted(pipe) == [0, 1, 2, 3, 4]
 
 
 def test_limit():

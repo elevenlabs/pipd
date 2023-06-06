@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import itertools
+import random
 import re
-from typing import Dict, Iterator, Optional, Type
+from typing import Any, Dict, Iterator, Optional, Sequence, Type
 
 
 def is_iterable(obj):
@@ -20,6 +21,19 @@ def camelcase_to_snakecase(name):
 class Function:
     def __call__(self, items) -> Iterator:
         raise NotImplementedError
+
+
+def merge_rand(
+    *iterators: Iterator[Any], weights: Optional[Sequence[float]] = None
+) -> Iterator[Any]:
+    iterator_list = list(iterators)
+    weights = [1] * len(iterator_list) if weights is None else weights
+    while iterator_list:
+        next_iter: Iterator = random.choices(iterator_list, weights=weights)[0]
+        try:
+            yield next(next_iter)
+        except StopIteration:
+            break
 
 
 class Pipe:
@@ -48,9 +62,14 @@ class Pipe:
         return self.__class__(itertools.chain(self.items, other.items))
 
     def __call__(self):
-        # Exhaust iterator
-        for _ in self:
-            pass
+        return list(self)
+
+    def list(self):
+        return list(self)
+
+    @classmethod
+    def merge(cls, *pipes, weights: Optional[Sequence[float]] = None) -> Pipe:
+        return cls(merge_rand(*pipes, weights=weights))
 
     @classmethod
     def add_fn(cls, fn: Type[Function], name: Optional[str] = None):
