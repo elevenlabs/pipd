@@ -60,7 +60,7 @@ def test_read_lines():
     with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
         f.write("1\n2\n3\n4\n5")
         f.close()
-        pipe = Pipe().read_lines(f.name)
+        pipe = Pipe([f.name]).read_lines()
         assert list(pipe) == ["1", "2", "3", "4", "5"]
         os.remove(f.name)
 
@@ -135,7 +135,23 @@ def test_read_files():
             f1.write("a")
         with open(os.path.join(d, "f2.txt"), "w") as f2:
             f2.write("b")
-        pipe = Pipe().read_files(f"{d}/*.txt")
+        pipe = Pipe([f"{d}/*.txt"]).read_files()
         assert list(pipe) == [f1.name, f2.name]
         os.remove(f1.name)
         os.remove(f2.name)
+
+    # Test cache
+    with tempfile.TemporaryDirectory() as d:
+        with open(os.path.join(d, "f1.txt"), "w") as f1:
+            f1.write("a")
+        with open(os.path.join(d, "f2.txt"), "w") as f2:
+            f2.write("b")
+        assert not os.path.exists(f"{d}/cache.txt")
+        pipe = Pipe([f"{d}/*.txt"]).read_files(cache_filepath=f"{d}/cache.txt")
+        assert list(pipe) == [f1.name, f2.name]
+        # Check content of cache
+        with open(f"{d}/cache.txt", "r") as f:
+            assert f.read() == f"{f1.name}\n{f2.name}\n"
+        pipe = Pipe([f"{d}/*.txt"]).read_files(cache_filepath=f"{d}/cache.txt")
+        assert list(pipe) == [f1.name, f2.name]
+        os.remove(f"{d}/cache.txt")

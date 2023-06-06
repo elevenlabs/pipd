@@ -1,7 +1,7 @@
 import asyncio
 import glob
 import os
-from typing import Iterator, Optional, Sequence, TypeVar
+from typing import Iterable, Iterator, Optional, Sequence, TypeVar
 
 from pipd import Function, Pipe
 
@@ -29,27 +29,27 @@ def watchdir(
 
 class ReadFiles(Function):
     def __init__(
-        self, filepath: str, cache_filepath: Optional[str] = None, watch: bool = False
+        self, cache_filepath: Optional[str] = None, watch: bool = False
     ) -> None:
-        self.filepath = filepath
         self.cache_filepath = cache_filepath
         self.watch = watch
 
-    def __call__(self, *args) -> Iterator[str]:
-        files = []
-        if self.cache_filepath is not None:
-            if os.path.exists(self.cache_filepath):
-                files = list(read_lines(filepath=self.cache_filepath))
+    def __call__(self, items: Iterable[str]) -> Iterator[str]:
+        for filepath in items:
+            files = []
+            if self.cache_filepath is not None:
+                if os.path.exists(self.cache_filepath):
+                    files = list(read_lines(filepath=self.cache_filepath))
+                else:
+                    files = glob.glob(filepath)
+                    list(write_lines(files, filepath=self.cache_filepath))
             else:
-                files = glob.glob(self.filepath)
-                list(write_lines(files, filepath=self.cache_filepath))
-        else:
-            files = glob.glob(self.filepath)
+                files = glob.glob(filepath)
 
-        for file in files:
-            yield file
-        if self.watch:
-            yield from watchdir(os.path.dirname(self.filepath))
+            for file in files:
+                yield file
+            if self.watch:
+                yield from watchdir(os.path.dirname(filepath))
 
 
 Pipe.add_fn(ReadFiles)
