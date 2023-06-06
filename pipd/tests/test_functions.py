@@ -37,6 +37,9 @@ def test_batch():
     pipe = Pipe(range(5)).batch(2)
     assert list(pipe) == [[0, 1], [2, 3], [4]]
 
+    pipe = Pipe(range(5)).batch(2, partial=False)
+    assert list(pipe) == [[0, 1], [2, 3]]
+
 
 def test_unbatch():
     pipe = Pipe([[0, 1], [2, 3], [4]]).unbatch()

@@ -6,8 +6,9 @@ T = TypeVar("T")
 
 
 class Batch(Function):
-    def __init__(self, size: int) -> None:
+    def __init__(self, size: int, partial: bool = True) -> None:
         self.size = size
+        self.partial = partial
 
     def __call__(self, items: Iterable[T]) -> Iterator[List[T]]:
         batch = []
@@ -16,7 +17,7 @@ class Batch(Function):
             if len(batch) == self.size:
                 yield batch
                 batch = []
-        if batch:
+        if batch and self.partial:
             yield batch
 
 
