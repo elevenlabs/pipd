@@ -31,11 +31,19 @@ def log_and_continue(exception: Exception):
     print(repr(exception))
 
 
+def is_iterable(obj):
+    try:
+        iter(obj)
+        return True
+    except TypeError:
+        return False
+
+
 class Pipe:
     functions: Dict[str, Callable] = {}
 
     def __init__(self, *items):
-        if len(items) == 1 and isinstance(items[0], Iterable):
+        if len(items) == 1 and is_iterable(items[0]):
             items = items[0]
         self.items = iter(items)
 
@@ -57,23 +65,16 @@ class Pipe:
             pass
 
     @classmethod
-    def add_function(cls, name: str, function: Callable):
-        cls.functions[name] = function
+    def add(cls, fn: Callable, name: Optional[str] = None) -> Callable:
+        def fn_curried(*args, **kwargs):
+            def _fn(items: Optional[Iterable[T]] = None):
+                return cls(fn(items, *args, **kwargs))
 
+            return _fn
 
-def as_pipe(fn: Callable, name: Optional[str] = None) -> Callable:
-    def fn_curried(*args, **kwargs):
-        def _fn(items: Optional[Iterable[T]] = None):
-            return Pipe(fn(items, *args, **kwargs))
-
-        return _fn
-
-    Pipe.add_function(
-        # If name is None we assume the function is named _name and remove the _
-        name=fn.__name__[1:] if name is None else name,
-        function=fn_curried,
-    )
-    return fn_curried
+        name = fn.__name__[1:] if name is None else name
+        cls.functions[name] = fn_curried
+        return fn_curried
 
 
 def _map(
@@ -118,7 +119,7 @@ def _map(
                 handler(e)
 
 
-map = as_pipe(_map)
+map = Pipe.add(_map)
 
 
 def _filter(
@@ -129,7 +130,7 @@ def _filter(
             yield item
 
 
-filter = as_pipe(_filter)
+filter = Pipe.add(_filter)
 
 
 def _side(
@@ -157,7 +158,7 @@ def _side(
             yield item
 
 
-side = as_pipe(_side)
+side = Pipe.add(_side)
 
 
 def _batch(items: Iterable[T], size: int) -> Iterator[List[T]]:
@@ -171,7 +172,7 @@ def _batch(items: Iterable[T], size: int) -> Iterator[List[T]]:
         yield batch
 
 
-batch = as_pipe(_batch)
+batch = Pipe.add(_batch)
 
 
 def _unbatch(items: Iterable[Sequence[T]]) -> Iterator[T]:
@@ -180,7 +181,7 @@ def _unbatch(items: Iterable[Sequence[T]]) -> Iterator[T]:
             yield item
 
 
-unbatch = as_pipe(_unbatch)
+unbatch = Pipe.add(_unbatch)
 
 
 def pick(items: List[T], random: bool = False) -> T:
@@ -205,7 +206,7 @@ def _shuffle(items: Iterator[T], size: int, start: Optional[int] = None) -> Iter
         yield pick(buffer)
 
 
-shuffle = as_pipe(_shuffle)
+shuffle = Pipe.add(_shuffle)
 
 
 def _limit(items: Iterable[T], limit: int = 10**100) -> Iterator[T]:
@@ -215,14 +216,14 @@ def _limit(items: Iterable[T], limit: int = 10**100) -> Iterator[T]:
         yield item
 
 
-limit = as_pipe(_limit)
+limit = Pipe.add(_limit)
 
 
 def _log(items: Iterable[T], fn: Callable[[T], None] = print) -> Iterator[T]:
     return _side(items, fn)
 
 
-log = as_pipe(_log)
+log = Pipe.add(_log)
 
 
 def _tqdm(items: Iterable[T], *args, **kwargs) -> Iterator[T]:
@@ -234,14 +235,14 @@ def _tqdm(items: Iterable[T], *args, **kwargs) -> Iterator[T]:
         yield item
 
 
-tqdm = as_pipe(_tqdm)
+tqdm = Pipe.add(_tqdm)
 
 
 def _sleep(items: Iterable[T], seconds: float) -> Iterator[T]:
     return _side(items, lambda _: time.sleep(seconds))
 
 
-sleep = as_pipe(_sleep)
+sleep = Pipe.add(_sleep)
 
 
 def watchdir(
@@ -267,7 +268,7 @@ def _readf(_, filepath: str, watch: bool = False) -> Iterator[str]:
         yield from watchdir(os.path.dirname(filepath))
 
 
-readf = as_pipe(_readf)
+readf = Pipe.add(_readf)
 
 
 class Readf(Pipe):
@@ -287,7 +288,7 @@ def _readl(_, filepath: str, watch: bool = False) -> Iterator[str]:
                 break
 
 
-readl = as_pipe(_readl)
+readl = Pipe.add(_readl)
 
 
 class Readl(Pipe):
@@ -302,7 +303,7 @@ def _writel(items: Iterable[str], filepath: str) -> Iterator[str]:
             yield item
 
 
-writel = as_pipe(_writel)
+writel = Pipe.add(_writel)
 
 
 def _filter_cached(
@@ -320,7 +321,7 @@ def _filter_cached(
                 yield item
 
 
-filter_cached = as_pipe(_filter_cached)
+filter_cached = Pipe.add(_filter_cached)
 
 
 def _write_csv(
@@ -340,7 +341,7 @@ def _write_csv(
             yield item
 
 
-write_csv = as_pipe(_write_csv)
+write_csv = Pipe.add(_write_csv)
 
 
 def _read_csv(
@@ -356,7 +357,7 @@ def _read_csv(
             yield from csv.reader(f)
 
 
-read_csv = as_pipe(_read_csv)
+read_csv = Pipe.add(_read_csv)
 
 
 class ReadCSV(Pipe):
