@@ -96,7 +96,7 @@ def test_read_csv():
     with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
         f.write("1,2,3,4,5\n6,7,8,9,10")
         f.close()
-        pipe = Pipe().read_csv(f.name)
+        pipe = Pipe([f.name]).read_csv()
         assert list(pipe) == [["1", "2", "3", "4", "5"], ["6", "7", "8", "9", "10"]]
         os.remove(f.name)
 
