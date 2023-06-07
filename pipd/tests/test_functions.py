@@ -74,7 +74,7 @@ def test_write_lines():
 
     with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
         pipe = Pipe(range(5)).write_lines(f.name)
-        pipe()
+        list(pipe)
         with open(f.name, "r") as f2:
             assert f2.read() == "0\n1\n2\n3\n4\n"
         os.remove(f.name)
@@ -110,7 +110,7 @@ def test_write_csv():
 
     with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
         pipe = Pipe([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]).write_csv(f.name)
-        pipe()
+        list(pipe)
         with open(f.name, "r") as f2:
             assert f2.read() == "1,2,3,4,5\n6,7,8,9,10\n"
         os.remove(f.name)
@@ -123,7 +123,7 @@ def test_write_csv():
                 {"a": 6, "b": 7, "c": 8, "d": 9, "e": 10},
             ]
         ).write_csv(f.name)
-        pipe()
+        list(pipe)
         with open(f.name, "r") as f2:
             assert f2.read() == "a,b,c,d,e\n1,2,3,4,5\n6,7,8,9,10\n"
         os.remove(f.name)

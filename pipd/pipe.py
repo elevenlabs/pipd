@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import itertools
 import random
 import re
-from typing import Any, Dict, Iterator, Optional, Sequence, Type
+from typing import Any, Callable, Dict, Iterator, Optional, Sequence, Type
 
 
 def is_iterable(obj):
@@ -18,9 +17,17 @@ def camelcase_to_snakecase(name):
     return re.sub(r"([a-z])([A-Z])", r"\1_\2", name).lower()
 
 
-class Function:
-    def __call__(self, items) -> Iterator:
-        raise NotImplementedError
+def identity(x: Any) -> Any:
+    return x
+
+
+def compose(*funcs: Callable[[Any], Any]) -> Callable[[Any], Any]:
+    def composed(arg: Any) -> Any:
+        for func in funcs:
+            arg = func(arg)
+        return arg
+
+    return composed
 
 
 def merge_rand(
@@ -36,42 +43,60 @@ def merge_rand(
             break
 
 
-class Pipe:
-    functions: Dict[str, Type[Function]] = {}
+class Function:
+    def __call__(self, items) -> Iterator:
+        raise NotImplementedError
 
-    def __init__(self, *items):
-        if len(items) == 1 and is_iterable(items[0]):
-            items = items[0]
-        self.items: Iterator = iter(items)
 
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        return next(self.items)
-
-    def __getattr__(self, name):
-        def method(*args, **kwargs) -> Pipe:
-            return self.__class__(self.functions[name](*args, **kwargs)(self.items))  # type: ignore # noqa
+class PipeMeta(type):
+    def __getattr__(cls, name):
+        def method(*args, **kwargs):
+            return cls().__getattr__(name)(*args, **kwargs)
 
         return method
 
-    def __add__(self, other: Pipe) -> Pipe:
-        if not isinstance(other, Pipe):
-            raise TypeError("Both objects must be of type 'Pipe'")
-        return self.__class__(itertools.chain(self.items, other.items))
 
-    def __call__(self):
-        return list(self)
+class Pipe(metaclass=PipeMeta):
+    functions: Dict[str, Type[Function]] = {}
+
+    def __init__(self, *iterable, function: Optional[Callable] = identity):
+        if len(iterable) == 1 and is_iterable(iterable[0]):
+            iterable = iterable[0]
+        self.iterator = iter(iterable)
+        self.function = function
+
+    def __iter__(self):
+        yield from self.function(self.iterator)
+
+    def __next__(self):
+        return next(self.function(self.iterator))
+
+    def close(self):
+        # Necessary to use `yield from` on a Pipe object
+        pass
 
     def list(self):
         return list(self)
 
-    @classmethod
-    def merge(cls, *pipes, weights: Optional[Sequence[float]] = None) -> Pipe:
-        return cls(merge_rand(*pipes, weights=weights))
+    def __getattr__(self, name):
+        def method(*args, **kwargs):
+            cls = self.__class__
+            function = self.functions[name](*args, **kwargs)
+            return cls(self.iterator, function=compose(self.function, function))
+
+        return method
+
+    def __call__(self, *iterable):
+        if len(iterable) == 1 and is_iterable(iterable[0]):
+            iterable = iterable[0]
+        self.iterator = iter(iterable)
+        return self
 
     @classmethod
     def add_fn(cls, fn: Type[Function], name: Optional[str] = None):
         fn_name = camelcase_to_snakecase(fn.__name__) if name is None else name
         cls.functions[fn_name] = fn
+
+    @classmethod
+    def merge(cls, *pipes, weights: Optional[Sequence[float]] = None) -> Pipe:
+        return cls(merge_rand(*pipes, weights=weights))

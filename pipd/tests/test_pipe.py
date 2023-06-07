@@ -20,12 +20,20 @@ def test_pipe():
     assert next(pipe) == 1
     assert next(pipe) == 2
 
+    pipe = Pipe(0, 1, 2, 3)
 
-def test_add():
-    pipe0 = Pipe(0, 1, 2, 3)
-    pipe1 = Pipe(4, 5, 6, 7)
-    pipe = pipe0 + pipe1
-    assert list(pipe) == [0, 1, 2, 3, 4, 5, 6, 7]
+    def gen():
+        yield from pipe
+
+    assert list(gen()) == [0, 1, 2, 3]
+
+
+def test_metaclass():
+    pipe = Pipe
+    assert list(pipe(0, 1, 2, 3)) == [0, 1, 2, 3]
+
+    pipe = Pipe.map(lambda x: x + 1)
+    assert list(pipe(0, 1, 2, 3)) == [1, 2, 3, 4]
 
 
 def test_merge():

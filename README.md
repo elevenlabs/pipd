@@ -27,9 +27,11 @@ _Iterate over the pipeline one item at a time_
 next(pipe)
 ```
 
-_Consume/run entire pipeline_
+_Use a meta pipeline (i.e. functional only)_
 ```py
-pipe()
+pipe = Pipe.map(lambda x: x + 1)
+
+pipe([1, 2, 3, 4, 5]).list() == [2, 3, 4, 5, 6]
 ```
 
 
@@ -217,10 +219,10 @@ pipe() # run the pipeline
 
 ### `shuffle`
 
-### `Readf`, `readf`
+### `read_files`
 
-### `Readl`, `readl`
+### `read_lines`
 
-### `writel`
+### `write_lines`
 
 ### `filter_cached`
