@@ -158,3 +158,14 @@ def test_read_files():
         pipe = Pipe([f"{d}/*.txt"]).read_files(cache_filepath=f"{d}/cache.txt")
         assert list(pipe) == [f1.name, f2.name]
         os.remove(f"{d}/cache.txt")
+
+    # Test shuffle
+    with tempfile.TemporaryDirectory() as d:
+        with open(os.path.join(d, "f1.txt"), "w") as f1:
+            f1.write("a")
+        with open(os.path.join(d, "f2.txt"), "w") as f2:
+            f2.write("b")
+        pipe = Pipe([f"{d}/*.txt"]).read_files(shuffle=True)
+        assert sorted(list(pipe)) == sorted([f1.name, f2.name])
+        os.remove(f1.name)
+        os.remove(f2.name)

@@ -1,6 +1,7 @@
 import asyncio
 import glob
 import os
+import random
 from typing import Iterable, Iterator, Optional, Sequence, TypeVar
 
 from pipd import Function, Pipe
@@ -29,10 +30,14 @@ def watchdir(
 
 class ReadFiles(Function):
     def __init__(
-        self, cache_filepath: Optional[str] = None, watch: bool = False
+        self,
+        cache_filepath: Optional[str] = None,
+        watch: bool = False,
+        shuffle: bool = False,
     ) -> None:
         self.cache_filepath = cache_filepath
         self.watch = watch
+        self.shuffle = shuffle
 
     def __call__(self, items: Iterable[str]) -> Iterator[str]:
         for filepath in items:
@@ -45,6 +50,9 @@ class ReadFiles(Function):
                     list(write_lines(files, filepath=self.cache_filepath))
             else:
                 files = glob.glob(filepath)
+
+            if self.shuffle:
+                random.shuffle(files)
 
             for file in files:
                 yield file
