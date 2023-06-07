@@ -16,9 +16,10 @@ def test_pipe():
             return key
 
     pipe = Pipe(ClassWithGetItem())
-    assert next(pipe) == 0
-    assert next(pipe) == 1
-    assert next(pipe) == 2
+    it = iter(pipe)
+    assert next(it) == 0
+    assert next(it) == 1
+    assert next(it) == 2
 
     pipe = Pipe(0, 1, 2, 3)
 
@@ -36,8 +37,8 @@ def test_metaclass():
     assert list(pipe(0, 1, 2, 3)) == [1, 2, 3, 4]
 
 
-def test_merge():
-    pipe0 = Pipe(0, 0, 0, 0, 0, 0)
-    pipe1 = Pipe(1, 1, 1, 1, 1, 1)
-    pipe = Pipe.merge(pipe0, pipe1, weights=[3, 1])
-    print(list(pipe))
+# def test_merge():
+#     pipe0 = Pipe(0, 0, 0, 0, 0, 0)
+#     pipe1 = Pipe(1, 1, 1, 1, 1, 1)
+#     pipe = Pipe.merge(pipe0, pipe1, weights=[3, 1])
+#     print(list(pipe))

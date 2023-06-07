@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 import re
+import traceback
 from typing import Any, Callable, Dict, Iterator, Optional, Sequence, Type
 
 
@@ -11,6 +12,14 @@ def is_iterable(obj):
         return True
     except TypeError:
         return False
+
+
+def log_traceback_and_continue(exception: Exception):
+    message = "Exception in Pipe, logging traceback continuing:\n"
+    message += "".join(
+        traceback.format_exception(type(exception), exception, exception.__traceback__)
+    )
+    print(message)
 
 
 def camelcase_to_snakecase(name):
@@ -59,17 +68,24 @@ class PipeMeta(type):
 class Pipe(metaclass=PipeMeta):
     functions: Dict[str, Type[Function]] = {}
 
-    def __init__(self, *iterable, function: Optional[Callable] = identity):
+    def __init__(
+        self,
+        *iterable,
+        function: Optional[Callable] = identity,
+        handler: Optional[Callable] = log_traceback_and_continue,
+    ):
         if len(iterable) == 1 and is_iterable(iterable[0]):
             iterable = iterable[0]
-        self.iterator = iter(iterable)
+        self.iterable = iterable
         self.function = function
+        self.handler = handler
 
     def __iter__(self):
-        yield from self.function(self.iterator)
-
-    def __next__(self):
-        return next(self.function(self.iterator))
+        for item in self.function(iter(self.iterable)):
+            try:
+                yield item
+            except Exception as e:
+                self.handler(e)
 
     def close(self):
         # Necessary to use `yield from` on a Pipe object
@@ -82,21 +98,14 @@ class Pipe(metaclass=PipeMeta):
         def method(*args, **kwargs):
             cls = self.__class__
             function = self.functions[name](*args, **kwargs)
-            return cls(self.iterator, function=compose(self.function, function))
+            return cls(self.iterable, function=compose(self.function, function))
 
         return method
 
     def __call__(self, *iterable):
-        if len(iterable) == 1 and is_iterable(iterable[0]):
-            iterable = iterable[0]
-        self.iterator = iter(iterable)
-        return self
+        return self.__class__(*iterable, function=self.function)
 
     @classmethod
     def add_fn(cls, fn: Type[Function], name: Optional[str] = None):
         fn_name = camelcase_to_snakecase(fn.__name__) if name is None else name
         cls.functions[fn_name] = fn
-
-    @classmethod
-    def merge(cls, *pipes, weights: Optional[Sequence[float]] = None) -> Pipe:
-        return cls(merge_rand(*pipes, weights=weights))

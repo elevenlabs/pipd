@@ -6,14 +6,10 @@ from concurrent.futures import (
 )
 from typing import Callable, Iterable, Iterator, Optional, TypeVar
 
-from pipd import Function, Pipe
+from pipd import Function, Pipe, log_traceback_and_continue
 
 T = TypeVar("T")
 U = TypeVar("U")
-
-
-def log_and_continue(exception: Exception):
-    print(repr(exception))
 
 
 class Map(Function):
@@ -23,7 +19,7 @@ class Map(Function):
         num_workers: int = 0,
         buffer: Optional[int] = None,
         mode: str = "multithread",
-        handler: Callable = log_and_continue,
+        handler: Callable = log_traceback_and_continue,
     ) -> None:
         assert mode in ["multithread", "multiprocess"]
         self.fn = fn

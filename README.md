@@ -24,7 +24,9 @@ for item in pipe:
 
 _Iterate over the pipeline one item at a time_
 ```py
-next(pipe)
+it = iter(pipe)
+next(it)
+next(it)
 ```
 
 _Use a meta pipeline (i.e. functional only)_
@@ -40,18 +42,13 @@ pipe([1, 2, 3, 4, 5]).list() == [2, 3, 4, 5, 6]
 from pipd import Pipe
 
 pipe = Pipe(1, 2, 3).map(lambda x: x * 2)
-
-print(next(pipe))
-print(next(pipe))
-print(next(pipe))
+print(list(pipe))
 ```
 
 <details> <summary> Show output </summary>
 
 ```py
-2
-4
-6
+[2, 4, 6]
 ```
 
 </details>
@@ -61,18 +58,13 @@ _Map items to parallel workers_
 from pipd import Pipe
 
 pipe = Pipe(1, 2, 3).map(lambda x: x * 2, num_workers=2) # parallel map (note: order is not guaranteed)
-
-print(next(pipe))
-print(next(pipe))
-print(next(pipe))
+print(list(pipe))
 ```
 
 <details> <summary> Show output </summary>
 
 ```py
-4
-2
-6
+[2, 4, 6]
 ```
 
 </details>
@@ -83,16 +75,13 @@ print(next(pipe))
 from pipd import Pipe
 
 pipe = Pipe(1, 2, 3).filter(lambda x: x != 1)
-
-print(next(pipe))
-print(next(pipe))
+print(list(pipe))
 ```
 
 <details> <summary> Show output </summary>
 
 ```py
-2
-3
+[2, 3]
 ```
 
 </details>
@@ -104,9 +93,9 @@ Applies a function on each item in the pipeline without changing the item, usefu
 from pipd import Pipe
 
 pipe = Pipe(1, 2, 3).side(lambda x: print('side', x))
-
-print(next(pipe))
-print(next(pipe))
+it = iter(pipe)
+print(next(it))
+print(next(it))
 ```
 
 <details> <summary> Show output </summary>
@@ -125,10 +114,10 @@ side 2
 from pipd import Pipe
 
 pipe = Pipe(1, 2, 3, 4, 5).batch(2)
-
-print(next(pipe))
-print(next(pipe))
-print(next(pipe))
+it = iter(pipe)
+print(next(it))
+print(next(it))
+print(next(it))
 ```
 
 <details> <summary> Show output </summary>
@@ -147,22 +136,13 @@ print(next(pipe))
 from pipd import Pipe
 
 pipe = Pipe([1, 2], [3], [4, 5]).unbatch()
-
-print(next(pipe))
-print(next(pipe))
-print(next(pipe))
-print(next(pipe))
-print(next(pipe))
+print(list(pipe))
 ```
 
 <details> <summary> Show output </summary>
 
 ```py
-1
-2
-3
-4
-5
+[1, 2, 3, 4, 5]
 ```
 
 </details>
@@ -173,7 +153,7 @@ print(next(pipe))
 from pipd import Pipe
 
 pipe = Pipe(range(10)).log()
-pipe() # run the pipeline
+list(pipe) # runs the pipeline
 ```
 
 <details> <summary> Show output </summary>
@@ -198,7 +178,7 @@ pipe() # run the pipeline
 from pipd import Pipe
 
 pipe = Pipe(range(10)).limit(5).log()
-pipe() # run the pipeline
+list(pipe) # runs the pipeline
 ```
 
 <details> <summary> Show output </summary>
