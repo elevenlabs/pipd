@@ -10,10 +10,14 @@ def test_merged_pipe():
     merged = MergedPipe(pipe, pipe1)
 
     it = iter(merged)
-    assert next(it) == [0, "a"]
-    assert next(it) == [1, "b"]
-    assert next(it) == [2, "c"]
-    assert next(it) == [3, "d"]
+    assert next(it) == 0
+    assert next(it) == "a"
+    assert next(it) == 1
+    assert next(it) == "b"
+    assert next(it) == 2
+    assert next(it) == "c"
+    assert next(it) == 3
+    assert next(it) == "d"
     with pytest.raises(StopIteration):
         next(it)
 
@@ -22,9 +26,15 @@ def test_merged_pipe():
     merged = MergedPipe(pipe, pipe1, repeat=True)
 
     it = iter(merged)
-    assert next(it) == [0, "a"]
-    assert next(it) == [1, "b"]
-    assert next(it) == [2, "c"]
-    assert next(it) == [3, "d"]
-    assert next(it) == [0, "e"]
-    assert next(it) == [1, "a"]
+    assert next(it) == 0
+    assert next(it) == "a"
+    assert next(it) == 1
+    assert next(it) == "b"
+    assert next(it) == 2
+    assert next(it) == "c"
+    assert next(it) == 3
+    assert next(it) == "d"
+    assert next(it) == 0
+    assert next(it) == "e"
+    assert next(it) == 1
+    assert next(it) == "a"
