@@ -1,25 +1,27 @@
 from random import choices
-from typing import Callable, Optional, Sequence
+from typing import Callable, Iterable, Iterator, Optional, Sequence, TypeVar
 
 from pipd import Pipe
 
+T = TypeVar("T")
 
-def merge_pipes(
-    pipes: Sequence[Pipe],
+
+def merge_iters(
+    *iterators: Iterable[T],
     repeat: bool = False,
     repeat_callback: Optional[Callable] = None,
     random: bool = False,
     weights: Optional[Sequence[float]] = None,
-):
+) -> Iterator[T]:
     assert weights is None or random, "weights only works with random=True"
 
-    iters = [iter(pipe) for pipe in pipes]
-    ids = list(range(len(pipes)))
+    iters = [iter(it) for it in iterators]
+    ids = list(range(len(iterators)))
 
     while True:
         # Choose random iter ids if random=True
         ids_curr = (
-            choices(ids, k=len(pipes), weights=weights or [1] * len(pipes))
+            choices(ids, k=len(iterators), weights=weights or [1] * len(iterators))
             if random
             else ids
         )
@@ -30,7 +32,7 @@ def merge_pipes(
             except StopIteration:
                 if repeat:
                     # Reset iterator and add item
-                    iters[i] = iter(pipes[i])
+                    iters[i] = iter(iterators[i])
                     yield next(iters[i])
                     # Notify callback with pipe index
                     if repeat_callback is not None:
@@ -47,15 +49,15 @@ class MergedPipe(Pipe):
         repeat_callback: Optional[Callable] = None,
         random: bool = False,
         weights: Optional[Sequence[float]] = None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
-            merge_pipes(
-                pipes=pipes,
+            merge_iters(
+                *pipes,
                 repeat=repeat,
                 repeat_callback=repeat_callback,
                 random=random,
                 weights=weights,
             ),
-            **kwargs
+            **kwargs,
         )

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import random
 import re
 import traceback
-from typing import Any, Callable, Dict, Iterator, Optional, Sequence, Type
+from typing import Any, Callable, Dict, Iterator, Optional, Type
 
 
 def is_iterable(obj):
@@ -37,19 +36,6 @@ def compose(*funcs: Callable[[Any], Any]) -> Callable[[Any], Any]:
         return arg
 
     return composed
-
-
-def merge_rand(
-    *iterators: Iterator[Any], weights: Optional[Sequence[float]] = None
-) -> Iterator[Any]:
-    iterator_list = list(iterators)
-    weights = [1] * len(iterator_list) if weights is None else weights
-    while iterator_list:
-        next_iter: Iterator = random.choices(iterator_list, weights=weights)[0]
-        try:
-            yield next(next_iter)
-        except StopIteration:
-            break
 
 
 class Function:
