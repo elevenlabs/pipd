@@ -15,7 +15,7 @@ def is_iterable(obj):
 
 
 def log_traceback_and_continue(exception: Exception):
-    message = "Exception in Pipe, logging traceback continuing:\n"
+    message = "Exception in Pipe, logging trace and continuing:\n"
     message += "".join(
         traceback.format_exception(type(exception), exception, exception.__traceback__)
     )

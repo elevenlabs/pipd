@@ -1,0 +1,1 @@
+from .merged import MergedPipe
