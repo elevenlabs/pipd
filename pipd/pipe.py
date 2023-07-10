@@ -54,17 +54,21 @@ class PipeMeta(type):
 class Pipe(metaclass=PipeMeta):
     _functions: Dict[str, Type[Function]] = {}
 
-    def __init__(
+    def __init__(self, *iterable, handler: Callable = log_traceback_and_continue):
+        self._update(*iterable, handler=handler)
+
+    def _update(
         self,
         *iterable,
-        function: Callable = identity,
-        handler: Callable = log_traceback_and_continue,
+        function: Optional[Callable] = None,
+        handler: Optional[Callable] = None,
     ):
         if len(iterable) == 1 and is_iterable(iterable[0]):
             iterable = iterable[0]
         self._iterable: Iterable = iterable
-        self._function = function
-        self._handler = handler
+        self._function = function or identity
+        self._handler = handler or log_traceback_and_continue
+        return self
 
     def __iter__(self):
         for item in self._function(iter(self._iterable)):
@@ -73,33 +77,31 @@ class Pipe(metaclass=PipeMeta):
             except Exception as e:
                 self._handler(e)
 
-    def _new_pipe(
+    def derive(self):
+        # This can be overridden to derive to different Pipe subclass
+        return Pipe()
+
+    def _derive(
         self,
-        iterable: Optional[Iterable] = None,
+        *iterable: Iterable,
         function: Optional[Callable] = None,
-        functions: Optional[Dict[str, Type[Function]]] = None,
         handler: Optional[Callable] = None,
     ):
-        # This is for composition intead of init so that init can be customized
-        pipe = self.__class__()
-        pipe._iterable = iterable or self._iterable
-        pipe._function = function or self._function
-        pipe._functions = functions or self._functions
-        pipe._handler = handler or self._handler
-        return pipe
+        return self.derive()._update(
+            *iterable or [self._iterable],
+            function=function or self._function,
+            handler=handler or self._handler,
+        )
 
     def __getattr__(self, name):
         def method(*args, **kwargs):
-            return self._new_pipe(
-                function=compose(self._function, self._functions[name](*args, **kwargs))
-            )
+            function = compose(self._function, self._functions[name](*args, **kwargs))
+            return self._derive(function=function)
 
         return method
 
     def __call__(self, *iterable):
-        if len(iterable) == 1 and is_iterable(iterable[0]):
-            iterable = iterable[0]
-        return self._new_pipe(iterable=iterable)
+        return self._derive(*iterable)
 
     def close(self):
         # Necessary to use `yield from` on a Pipe object
