@@ -1,9 +1,9 @@
 from typing import Dict, Iterable, Iterator, List, Sequence, Union
 
-from pipd import Function, Pipe
+from pipd import Pipe
 
 
-class ReadCSV(Function):
+class ReadCSV(Pipe):
     def __init__(self, header: Union[bool, Sequence[str]] = False) -> None:
         self.header = header
 
@@ -21,4 +21,4 @@ class ReadCSV(Function):
                     yield from csv.reader(f)
 
 
-Pipe.add_fn(ReadCSV)
+Pipe.register(ReadCSV)

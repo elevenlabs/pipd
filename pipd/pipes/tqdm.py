@@ -1,11 +1,11 @@
 from typing import Iterable, Iterator, TypeVar
 
-from pipd import Function, Pipe
+from pipd import Pipe
 
 T = TypeVar("T")
 
 
-class Tqdm(Function):
+class Tqdm(Pipe):
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
@@ -20,4 +20,4 @@ class Tqdm(Function):
             yield item
 
 
-Pipe.add_fn(Tqdm)
+Pipe.register(Tqdm)

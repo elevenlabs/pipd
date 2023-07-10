@@ -1,13 +1,13 @@
 from typing import Callable, Iterable, Iterator, TypeVar
 
-from pipd import Function, Pipe
+from pipd import Pipe
 
 from .map import Map
 
 T = TypeVar("T")
 
 
-class Filter(Function):
+class Filter(Pipe):
     def __init__(self, fn: Callable[[T], bool], *args, **kwargs) -> None:
         self.fn = lambda x: (x, fn(x))
         self.args = args
@@ -19,4 +19,4 @@ class Filter(Function):
                 yield item  # type: ignore
 
 
-Pipe.add_fn(Filter)
+Pipe.register(Filter)

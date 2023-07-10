@@ -1,7 +1,7 @@
 import select
 from typing import Iterable, Iterator
 
-from pipd import Function, Pipe
+from pipd import Pipe
 
 
 def read_lines(filepath: str, watch: bool = False) -> Iterator[str]:
@@ -20,7 +20,7 @@ def read_lines(filepath: str, watch: bool = False) -> Iterator[str]:
                 yield line.strip()
 
 
-class ReadLines(Function):
+class ReadLines(Pipe):
     def __init__(self, watch: bool = False) -> None:
         self.watch = watch
 
@@ -29,4 +29,4 @@ class ReadLines(Function):
             yield from read_lines(filepath=filepath, watch=self.watch)
 
 
-Pipe.add_fn(ReadLines)
+Pipe.register(ReadLines)

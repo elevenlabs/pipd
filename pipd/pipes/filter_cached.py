@@ -1,14 +1,14 @@
 import os
 from typing import Callable, Iterable, Iterator, Optional, TypeVar
 
-from pipd import Function, Pipe
+from pipd import Pipe
 
 from .read_lines import read_lines
 
 T = TypeVar("T")
 
 
-class FilterCached(Function):
+class FilterCached(Pipe):
     def __init__(self, filepath: str, key: Optional[Callable] = None) -> None:
         self.filepath = filepath
         self.key = key
@@ -26,4 +26,4 @@ class FilterCached(Function):
                     yield item
 
 
-Pipe.add_fn(FilterCached)
+Pipe.register(FilterCached)

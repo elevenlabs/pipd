@@ -1,9 +1,9 @@
 from typing import Any, Dict, Iterable, Iterator, Sequence, Union
 
-from pipd import Function, Pipe
+from pipd import Pipe
 
 
-class WriteCSV(Function):
+class WriteCSV(Pipe):
     def __init__(self, filepath: str) -> None:
         self.filepath = filepath
 
@@ -23,4 +23,4 @@ class WriteCSV(Function):
                 yield item
 
 
-Pipe.add_fn(WriteCSV)
+Pipe.register(WriteCSV)

@@ -1,11 +1,11 @@
 from typing import Iterable, Iterator, TypeVar
 
-from pipd import Function, Pipe
+from pipd import Pipe
 
 T = TypeVar("T")
 
 
-class Limit(Function):
+class Limit(Pipe):
     def __init__(self, limit: int = 10**100) -> None:
         self.limit = limit
 
@@ -16,4 +16,4 @@ class Limit(Function):
             yield item
 
 
-Pipe.add_fn(Limit)
+Pipe.register(Limit)

@@ -2,7 +2,7 @@ from pipd import Pipe
 
 
 def test_pipe():
-    pipe = Pipe(0, 1, 2, 3)
+    pipe = Pipe([0, 1, 2, 3])
     assert list(pipe) == [0, 1, 2, 3]
 
     pipe = Pipe([0, 1, 2, 3])
@@ -31,10 +31,10 @@ def test_pipe():
 
 def test_metaclass():
     pipe = Pipe
-    assert list(pipe(0, 1, 2, 3)) == [0, 1, 2, 3]
+    assert list(pipe([0, 1, 2, 3])) == [0, 1, 2, 3]
 
     pipe = Pipe.map(lambda x: x + 1)
-    assert list(pipe(0, 1, 2, 3)) == [1, 2, 3, 4]
+    assert list(pipe([0, 1, 2, 3])) == [1, 2, 3, 4]
 
 
 # def test_merge():

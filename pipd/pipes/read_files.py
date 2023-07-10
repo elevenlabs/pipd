@@ -4,7 +4,7 @@ import os
 import random
 from typing import Iterable, Iterator, Optional, Sequence, TypeVar
 
-from pipd import Function, Pipe
+from pipd import Pipe
 
 from .read_lines import read_lines
 from .write_lines import write_lines
@@ -28,7 +28,7 @@ def watchdir(
                 yield filepath
 
 
-class ReadFiles(Function):
+class ReadFiles(Pipe):
     def __init__(
         self,
         cache_filepath: Optional[str] = None,
@@ -60,4 +60,4 @@ class ReadFiles(Function):
                 yield from watchdir(os.path.dirname(filepath))
 
 
-Pipe.add_fn(ReadFiles)
+Pipe.register(ReadFiles)

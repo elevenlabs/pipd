@@ -1,7 +1,7 @@
 from random import randint
 from typing import Iterator, List, Optional, TypeVar
 
-from pipd import Function, Pipe
+from pipd import Pipe
 
 T = TypeVar("T")
 
@@ -11,12 +11,12 @@ def pick(items: List[T], random: bool = False) -> T:
     return items.pop(idx)
 
 
-class Shuffle(Function):
+class Shuffle(Pipe):
     def __init__(self, size: int, start: Optional[int] = None):
         self.size = size
         self.start = start or size
 
-    def __call__(self, items: Iterator[T]) -> Iterator[T]:
+    def __call__(self, items: Iterator[T]) -> Iterator[T]:  # type: ignore
         buffer = []
         for item in items:
             buffer.append(item)
@@ -32,4 +32,4 @@ class Shuffle(Function):
             yield pick(buffer)
 
 
-Pipe.add_fn(Shuffle)
+Pipe.register(Shuffle)

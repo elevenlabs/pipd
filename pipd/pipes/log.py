@@ -1,13 +1,13 @@
 from typing import Callable, Iterable, Iterator, TypeVar
 
-from pipd import Function, Pipe
+from pipd import Pipe
 
 from .side import Side
 
 T = TypeVar("T")
 
 
-class Log(Function):
+class Log(Pipe):
     def __init__(self, fn: Callable[[T], None] = print) -> None:
         self.fn = fn
 
@@ -15,4 +15,4 @@ class Log(Function):
         return Side(self.fn)(items)
 
 
-Pipe.add_fn(Log)
+Pipe.register(Log)

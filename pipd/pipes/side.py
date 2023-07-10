@@ -1,13 +1,13 @@
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from typing import Callable, Iterable, Iterator, TypeVar
 
-from pipd import Function, Pipe, log_traceback_and_continue
+from pipd import Pipe, log_traceback_and_continue
 
 T = TypeVar("T")
 U = TypeVar("U")
 
 
-class Side(Function):
+class Side(Pipe):
     def __init__(
         self,
         fn: Callable[[T], U],
@@ -40,4 +40,4 @@ class Side(Function):
                 yield item
 
 
-Pipe.add_fn(Side)
+Pipe.register(Side)

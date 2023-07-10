@@ -1,11 +1,11 @@
 from typing import Iterable, Iterator, List, TypeVar
 
-from pipd import Function, Pipe
+from pipd import Pipe
 
 T = TypeVar("T")
 
 
-class Batch(Function):
+class Batch(Pipe):
     def __init__(self, size: int, partial: bool = True) -> None:
         self.size = size
         self.partial = partial
@@ -21,4 +21,4 @@ class Batch(Function):
             yield batch
 
 
-Pipe.add_fn(Batch)
+Pipe.register(Batch)

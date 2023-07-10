@@ -1,6 +1,6 @@
 from typing import Iterable, Iterator
 
-from pipd import Function, Pipe
+from pipd import Pipe
 
 
 def write_lines(items: Iterable[str], filepath: str) -> Iterator[str]:
@@ -10,7 +10,7 @@ def write_lines(items: Iterable[str], filepath: str) -> Iterator[str]:
             yield item
 
 
-class WriteLines(Function):
+class WriteLines(Pipe):
     def __init__(self, filepath: str) -> None:
         self.filepath = filepath
 
@@ -18,4 +18,4 @@ class WriteLines(Function):
         return write_lines(items, self.filepath)
 
 
-Pipe.add_fn(WriteLines)
+Pipe.register(WriteLines)

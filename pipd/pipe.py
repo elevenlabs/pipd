@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import re
 import traceback
-from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Type
+from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Type, TypeVar
+
+T = TypeVar("T")
 
 
 def is_iterable(obj):
@@ -29,18 +31,17 @@ def identity(x: Any) -> Any:
     return x
 
 
-def compose(*funcs: Callable[[Any], Any]) -> Callable[[Any], Any]:
-    def composed(arg: Any) -> Any:
-        for func in funcs:
-            arg = func(arg)
-        return arg
+def compose(source: Callable, target: Callable):
+    def composed(*args):
+        return target(source(*args))
 
     return composed
 
 
-class Function:
-    def __call__(self, items) -> Iterator:
-        raise NotImplementedError
+def unpack_iterable(*iterable: Any) -> Iterable[T]:
+    if len(iterable) == 1 and is_iterable(iterable[0]):
+        iterable = iterable[0]
+    return iterable
 
 
 class PipeMeta(type):
@@ -52,56 +53,36 @@ class PipeMeta(type):
 
 
 class Pipe(metaclass=PipeMeta):
-    _functions: Dict[str, Type[Function]] = {}
+    _pipes: Dict[str, Type[Pipe]] = {}
 
     def __init__(self, *iterable, handler: Callable = log_traceback_and_continue):
-        self._update(*iterable, handler=handler)
-
-    def _update(
-        self,
-        *iterable,
-        function: Optional[Callable] = None,
-        handler: Optional[Callable] = None,
-    ):
-        if len(iterable) == 1 and is_iterable(iterable[0]):
-            iterable = iterable[0]
-        self._iterable: Iterable = iterable
-        self._function = function or identity
+        self._iterable: Iterable = unpack_iterable(*iterable)
+        self._function = identity
         self._handler = handler or log_traceback_and_continue
-        return self
+
+    def __call__(self, iterable: Iterable[Any]) -> Iterator[Any]:
+        return self._function(iterable)
 
     def __iter__(self):
-        for item in self._function(iter(self._iterable)):
+        for item in self(iter(self._iterable)):
             try:
                 yield item
             except Exception as e:
                 self._handler(e)
 
-    def derive(self):
-        # This can be overridden to derive to different Pipe subclass
+    def new(self):
         return Pipe()
-
-    def _derive(
-        self,
-        *iterable: Iterable,
-        function: Optional[Callable] = None,
-        handler: Optional[Callable] = None,
-    ):
-        return self.derive()._update(
-            *iterable or [self._iterable],
-            function=function or self._function,
-            handler=handler or self._handler,
-        )
 
     def __getattr__(self, name):
         def method(*args, **kwargs):
-            function = compose(self._function, self._functions[name](*args, **kwargs))
-            return self._derive(function=function)
+            pipe_fn = self._pipes[name](*args, **kwargs)
+            pipe = pipe_fn.new()
+            pipe._function = compose(self, pipe_fn)
+            pipe._iterable = self._iterable
+            pipe._handler = self._handler
+            return pipe
 
         return method
-
-    def __call__(self, *iterable):
-        return self._derive(*iterable)
 
     def close(self):
         # Necessary to use `yield from` on a Pipe object
@@ -111,6 +92,6 @@ class Pipe(metaclass=PipeMeta):
         return list(self)
 
     @classmethod
-    def add_fn(cls, fn: Type[Function], name: Optional[str] = None):
-        fn_name = camelcase_to_snakecase(fn.__name__) if name is None else name
-        cls._functions[fn_name] = fn
+    def register(cls, pipe_type: Type[Pipe], name: Optional[str] = None):
+        pipe_name = camelcase_to_snakecase(pipe_type.__name__) if name is None else name
+        cls._pipes[pipe_name] = pipe_type
