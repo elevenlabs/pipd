@@ -150,6 +150,14 @@ pipe = Pipe(range(10)).limit(5).log()
 list(pipe) == [0, 1, 2, 3, 4]
 ```
 
+### `repeat`
+```py
+from pipd import Pipe
+
+pipe = Pipe(1, 2, 3).repeat(2)
+list(pipe) == [1, 2, 3, 1, 2, 3]
+```
+
 ### `sleep`
 Useful for debugging a pipeline that runs too fast.
 ```py
