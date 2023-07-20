@@ -339,6 +339,8 @@ list(pipe) == []
 ## Create custom `Pipe` object
 
 ```py
+from pipd import Pipe
+
 class PlusOne(Pipe):
 
     def __call__(self, items):
