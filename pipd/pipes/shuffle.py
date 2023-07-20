@@ -1,5 +1,5 @@
 from random import randint
-from typing import Iterator, List, Optional, TypeVar
+from typing import Iterable, Iterator, List, Optional, TypeVar
 
 from pipd import Pipe
 
@@ -16,13 +16,14 @@ class Shuffle(Pipe):
         self.size = size
         self.start = start or size
 
-    def __call__(self, items: Iterator[T]) -> Iterator[T]:  # type: ignore
+    def __call__(self, items: Iterable[T]) -> Iterator[T]:  # type: ignore
         buffer = []
-        for item in items:
+        it = iter(items)
+        for item in it:
             buffer.append(item)
             if len(buffer) < self.size:
                 try:
-                    buffer.append(next(items))
+                    buffer.append(next(it))
                 except StopIteration:
                     pass
             if len(buffer) >= self.start:
@@ -30,6 +31,3 @@ class Shuffle(Pipe):
         # Empty buffer at the end
         while len(buffer) > 0:
             yield pick(buffer)
-
-
-Pipe.register(Shuffle)

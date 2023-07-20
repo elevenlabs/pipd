@@ -38,6 +38,15 @@ def compose(source: Callable, target: Callable):
     return composed
 
 
+class Chain:
+    def __init__(self, *iterables):
+        self.iterables = iterables
+
+    def __iter__(self):
+        for iterable in self.iterables:
+            yield from iterable
+
+
 def unpack_iterable(*iterable: Any) -> Iterable[T]:
     if len(iterable) == 1 and is_iterable(iterable[0]):
         iterable = iterable[0]
@@ -45,7 +54,14 @@ def unpack_iterable(*iterable: Any) -> Iterable[T]:
 
 
 class PipeMeta(type):
+    def __init__(cls, name, bases, attrs):
+        super().__init__(name, bases, attrs)
+        if name != "Pipe":
+            cls.register()
+
     def __getattr__(cls, name):
+        """Allows to use meta pipe with no iterable: e.g. Pipe.map"""
+
         def method(*args, **kwargs):
             return cls().__getattr__(name)(*args, **kwargs)
 
@@ -53,18 +69,21 @@ class PipeMeta(type):
 
 
 class Pipe(metaclass=PipeMeta):
+    _iterable: Iterable = []
+    _function: Callable = identity
+    _handler: Callable = log_traceback_and_continue
     _pipes: Dict[str, Type[Pipe]] = {}
 
-    def __init__(self, *iterable, handler: Callable = log_traceback_and_continue):
-        self._iterable: Iterable = unpack_iterable(*iterable)
-        self._function = identity
-        self._handler = handler or log_traceback_and_continue
+    def __init__(self, *iterable, handler: Optional[Callable] = None):
+        self._iterable = unpack_iterable(*iterable)
+        self._handler = handler or self._handler  # type: ignore
+        self._function = identity  # type: ignore
 
     def __call__(self, iterable: Iterable[Any]) -> Iterator[Any]:
         return self._function(iterable)
 
     def __iter__(self):
-        for item in self(iter(self._iterable)):
+        for item in self(self._iterable):
             try:
                 yield item
             except Exception as e:
@@ -73,14 +92,17 @@ class Pipe(metaclass=PipeMeta):
     def new(self):
         return Pipe()
 
+    def __or__(self, other: Pipe):
+        new = other.new()
+        new._function = compose(self, other)
+        new._iterable = Chain(self._iterable, other._iterable)
+        new._handler = self._handler
+        return new
+
     def __getattr__(self, name):
         def method(*args, **kwargs):
-            pipe_fn = self._pipes[name](*args, **kwargs)
-            pipe = pipe_fn.new()
-            pipe._function = compose(self, pipe_fn)
-            pipe._iterable = self._iterable
-            pipe._handler = self._handler
-            return pipe
+            other = self._pipes[name](*args, **kwargs)
+            return self | other
 
         return method
 
@@ -88,10 +110,8 @@ class Pipe(metaclass=PipeMeta):
         # Necessary to use `yield from` on a Pipe object
         pass
 
-    def list(self):
-        return list(self)
-
     @classmethod
-    def register(cls, pipe_type: Type[Pipe], name: Optional[str] = None):
-        pipe_name = camelcase_to_snakecase(pipe_type.__name__) if name is None else name
-        cls._pipes[pipe_name] = pipe_type
+    def register(cls, target: Optional[Type] = None, name: Optional[str] = None):
+        pipe_name = name or camelcase_to_snakecase(cls.__name__)
+        target = target or Pipe
+        target._pipes[pipe_name] = cls

@@ -19,6 +19,3 @@ class Batch(Pipe):
                 batch = []
         if batch and self.partial:
             yield batch
-
-
-Pipe.register(Batch)

@@ -59,6 +59,3 @@ class Map(Pipe):
                     yield future.result()
                 except Exception as e:
                     self.handler(e)
-
-
-Pipe.register(Map)

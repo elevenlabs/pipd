@@ -17,6 +17,3 @@ class Filter(Pipe):
         for item, keep in Map(self.fn, *self.args, **self.kwargs)(items):  # type: ignore
             if keep:  # type: ignore
                 yield item  # type: ignore
-
-
-Pipe.register(Filter)

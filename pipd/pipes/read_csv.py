@@ -19,6 +19,3 @@ class ReadCSV(Pipe):
                     yield from csv.DictReader(f, fieldnames=fieldnames)
                 else:
                     yield from csv.reader(f)
-
-
-Pipe.register(ReadCSV)

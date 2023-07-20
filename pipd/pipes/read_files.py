@@ -58,6 +58,3 @@ class ReadFiles(Pipe):
                 yield file
             if self.watch:
                 yield from watchdir(os.path.dirname(filepath))
-
-
-Pipe.register(ReadFiles)

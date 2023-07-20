@@ -10,6 +10,3 @@ class Unbatch(Pipe):
         for b in items:
             for item in b:
                 yield item
-
-
-Pipe.register(Unbatch)

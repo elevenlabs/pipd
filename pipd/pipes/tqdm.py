@@ -18,6 +18,3 @@ class Tqdm(Pipe):
 
         for item in progressbar(items, *self.args, **self.kwargs):
             yield item
-
-
-Pipe.register(Tqdm)

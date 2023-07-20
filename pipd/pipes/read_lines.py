@@ -27,6 +27,3 @@ class ReadLines(Pipe):
     def __call__(self, items: Iterable[str]) -> Iterator[str]:
         for filepath in items:
             yield from read_lines(filepath=filepath, watch=self.watch)
-
-
-Pipe.register(ReadLines)

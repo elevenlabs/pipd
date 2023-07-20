@@ -24,6 +24,3 @@ class FilterCached(Pipe):
                     cache.add(value)
                     file.write(value + "\n")
                     yield item
-
-
-Pipe.register(FilterCached)

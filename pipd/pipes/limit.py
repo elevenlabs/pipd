@@ -14,6 +14,3 @@ class Limit(Pipe):
             if count >= self.limit:
                 return
             yield item
-
-
-Pipe.register(Limit)

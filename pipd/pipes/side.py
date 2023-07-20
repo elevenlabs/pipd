@@ -38,6 +38,3 @@ class Side(Pipe):
             for item in items:
                 executor.submit(self.fn, item)
                 yield item
-
-
-Pipe.register(Side)

@@ -6,7 +6,7 @@ from pipd import Pipe
 T = TypeVar("T")
 
 
-def merge_iters(
+def mix_iters(
     *iterators: Iterable[T],
     repeat: bool = False,
     repeat_callback: Optional[Callable] = None,
@@ -41,10 +41,10 @@ def merge_iters(
                     return
 
 
-class MergedPipe(Pipe):
+class Mix(Pipe):
     def __init__(
         self,
-        *pipes,
+        *iters,
         repeat: bool = False,
         repeat_callback: Optional[Callable] = None,
         random: bool = False,
@@ -52,8 +52,8 @@ class MergedPipe(Pipe):
         **kwargs,
     ):
         super().__init__(
-            merge_iters(
-                *pipes,
+            mix_iters(
+                *iters,
                 repeat=repeat,
                 repeat_callback=repeat_callback,
                 random=random,

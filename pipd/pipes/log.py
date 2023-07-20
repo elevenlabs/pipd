@@ -13,6 +13,3 @@ class Log(Pipe):
 
     def __call__(self, items: Iterable[T]) -> Iterator[T]:
         return Side(self.fn)(items)
-
-
-Pipe.register(Log)

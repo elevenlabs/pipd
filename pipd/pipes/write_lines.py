@@ -16,6 +16,3 @@ class WriteLines(Pipe):
 
     def __call__(self, items: Iterable[str]) -> Iterator[str]:
         return write_lines(items, self.filepath)
-
-
-Pipe.register(WriteLines)

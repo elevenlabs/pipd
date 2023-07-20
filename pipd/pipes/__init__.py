@@ -4,10 +4,12 @@ from .filter_cached import FilterCached
 from .limit import Limit
 from .log import Log
 from .map import Map
-from .merged import MergedPipe
+from .map_key import MapKey
+from .mix import Mix
 from .read_csv import ReadCSV
 from .read_files import ReadFiles
 from .read_lines import ReadLines
+from .repeat import Repeat
 from .shuffle import Shuffle
 from .side import Side
 from .sleep import Sleep

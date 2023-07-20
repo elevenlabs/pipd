@@ -21,6 +21,3 @@ class WriteCSV(Pipe):
                     item = item.values()  # type: ignore
                 writer.writerow(item)
                 yield item
-
-
-Pipe.register(WriteCSV)

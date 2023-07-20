@@ -18,6 +18,11 @@ def test_map():
     assert sorted(pipe) == [0, 2, 4, 6, 8]
 
 
+def test_map_key():
+    pipe = Pipe([{"a": 1}, {"a": 2}, {"a": 3}]).map_key("a", lambda x: x * 2)
+    assert list(pipe) == [{"a": 2}, {"a": 4}, {"a": 6}]
+
+
 def test_filter():
     pipe = Pipe(range(5)).filter(lambda x: x % 2 == 0)
     assert list(pipe) == [0, 2, 4]
@@ -55,6 +60,11 @@ def test_shuffle():
 def test_limit():
     pipe = Pipe(range(5)).limit(3)
     assert list(pipe) == [0, 1, 2]
+
+
+def test_repeat():
+    pipe = Pipe(range(5)).repeat(2)
+    assert list(pipe) == [0, 1, 2, 3, 4, 0, 1, 2, 3, 4]
 
 
 def test_read_lines():
@@ -172,12 +182,12 @@ def test_read_files():
         os.remove(f2.name)
 
 
-def test_merged_pipe():
-    from pipd import MergedPipe
+def test_mix_pipe():
+    from pipd import Mix
 
     pipe = Pipe([0, 1, 2, 3])
     pipe1 = Pipe(["a", "b", "c", "d", "e"])
-    merged = MergedPipe(pipe, pipe1)
+    merged = Mix(pipe, pipe1)
 
     it = iter(merged)
     assert next(it) == 0
@@ -193,8 +203,7 @@ def test_merged_pipe():
 
     pipe = Pipe([0, 1, 2, 3])
     pipe1 = Pipe(["a", "b", "c", "d", "e"])
-    merged = MergedPipe(pipe, pipe1, repeat=True)
-
+    merged = Mix(pipe, pipe1, repeat=True)
     it = iter(merged)
     assert next(it) == 0
     assert next(it) == "a"
@@ -208,3 +217,6 @@ def test_merged_pipe():
     assert next(it) == "e"
     assert next(it) == 1
     assert next(it) == "a"
+
+    items = list(Pipe.mix(Pipe([0, 1, 2, 3]), Pipe(["a", "b", "c", "d", "e"])))
+    assert items == [0, "a", 1, "b", 2, "c", 3, "d"]

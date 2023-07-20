@@ -29,16 +29,22 @@ def test_pipe():
     assert list(gen()) == [0, 1, 2, 3]
 
 
+def test_dot_chaining():
+    pipe = Pipe([0, 1, 2, 3]).map(lambda x: x + 1).map(lambda x: x * 2)
+    assert list(pipe) == [2, 4, 6, 8]
+
+
+def test_class_chaining():
+    from pipd import Map
+
+    pipe = Pipe([0, 1, 2, 3]) | Map(lambda x: x + 1) | Map(lambda x: x * 2)
+    assert list(pipe) == [2, 4, 6, 8]
+
+    pipe = Map(lambda x: x + 1) | Map(lambda x: x * 2)
+    assert list(pipe([0, 1, 2, 3])) == [2, 4, 6, 8]
+
+
 def test_metaclass():
-    pipe = Pipe
-    assert list(pipe([0, 1, 2, 3])) == [0, 1, 2, 3]
 
     pipe = Pipe.map(lambda x: x + 1)
     assert list(pipe([0, 1, 2, 3])) == [1, 2, 3, 4]
-
-
-# def test_merge():
-#     pipe0 = Pipe(0, 0, 0, 0, 0, 0)
-#     pipe1 = Pipe(1, 1, 1, 1, 1, 1)
-#     pipe = Pipe.merge(pipe0, pipe1, weights=[3, 1])
-#     print(list(pipe))
