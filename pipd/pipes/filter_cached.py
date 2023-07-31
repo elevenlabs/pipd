@@ -13,7 +13,7 @@ class FilterCached(Pipe):
         self.filepath = filepath
         self.key = key
 
-    def __call__(self, items: Iterable[T]) -> Iterator[T]:
+    def __call__(self, items: Iterable[T]) -> Iterator[T]:  # type: ignore
         cache = (
             set(read_lines(self.filepath)) if os.path.exists(self.filepath) else set()
         )

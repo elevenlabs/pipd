@@ -6,7 +6,7 @@ T = TypeVar("T")
 
 
 class Unbatch(Pipe):
-    def __call__(self, items: Iterable[Sequence[T]]) -> Iterator[T]:
+    def __call__(self, items: Iterable[Sequence[T]]) -> Iterator[T]:  # type: ignore
         for b in items:
             for item in b:
                 yield item

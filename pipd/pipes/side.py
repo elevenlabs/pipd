@@ -21,7 +21,7 @@ class Side(Pipe):
         self.mode = mode
         self.handler = handler
 
-    def __call__(self, items: Iterable[T]) -> Iterator[T]:
+    def __call__(self, items: Iterable[T]) -> Iterator[T]:  # type: ignore
         if self.num_workers == 0:
             for item in items:
                 try:

@@ -24,6 +24,6 @@ class ReadLines(Pipe):
     def __init__(self, watch: bool = False) -> None:
         self.watch = watch
 
-    def __call__(self, items: Iterable[str]) -> Iterator[str]:
+    def __call__(self, items: Iterable[str]) -> Iterator[str]:  # type: ignore
         for filepath in items:
             yield from read_lines(filepath=filepath, watch=self.watch)

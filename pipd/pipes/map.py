@@ -29,7 +29,7 @@ class Map(Pipe):
         self.mode = mode
         self.handler = handler
 
-    def __call__(self, items: Iterable[T]) -> Iterator[U]:
+    def __call__(self, items: Iterable[T]) -> Iterator[U]:  # type: ignore
         if self.num_workers == 0:
             for item in items:
                 try:

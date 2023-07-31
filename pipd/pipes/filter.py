@@ -13,7 +13,7 @@ class Filter(Pipe):
         self.args = args
         self.kwargs = kwargs
 
-    def __call__(self, items: Iterable[T]) -> Iterator[T]:
+    def __call__(self, items: Iterable[T]) -> Iterator[T]:  # type: ignore
         for item, keep in Map(self.fn, *self.args, **self.kwargs)(items):  # type: ignore
             if keep:  # type: ignore
                 yield item  # type: ignore

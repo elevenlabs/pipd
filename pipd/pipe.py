@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import traceback
-from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Type, TypeVar
+from typing import Any, Callable, Dict, Iterable, Optional, Type, TypeVar
 
 T = TypeVar("T")
 
@@ -27,26 +27,6 @@ def camelcase_to_snakecase(name):
     return re.sub(r"([a-z])([A-Z])", r"\1_\2", name).lower()
 
 
-def identity(x: Any) -> Any:
-    return x
-
-
-def compose(source: Callable, target: Callable):
-    def composed(*args):
-        return target(source(*args))
-
-    return composed
-
-
-class Chain:
-    def __init__(self, *iterables):
-        self.iterables = iterables
-
-    def __iter__(self):
-        for iterable in self.iterables:
-            yield from iterable
-
-
 def unpack_iterable(*iterable: Any) -> Iterable[T]:
     if len(iterable) == 1 and is_iterable(iterable[0]):
         iterable = iterable[0]
@@ -60,7 +40,7 @@ class PipeMeta(type):
             cls.register()
 
     def __getattr__(cls, name):
-        """Allows to use meta pipe with no iterable: e.g. Pipe.map"""
+        """Allows to use meta  pipe with no iterable: e.g. Pipe.map"""
 
         def method(*args, **kwargs):
             return cls().__getattr__(name)(*args, **kwargs)
@@ -69,35 +49,24 @@ class PipeMeta(type):
 
 
 class Pipe(metaclass=PipeMeta):
-    _iterable: Iterable = []
-    _function: Callable = identity
-    _handler: Callable = log_traceback_and_continue
     _pipes: Dict[str, Type[Pipe]] = {}
 
-    def __init__(self, *iterable, handler: Optional[Callable] = None):
-        self._iterable = unpack_iterable(*iterable)
-        self._handler = handler or self._handler  # type: ignore
-        self._function = identity  # type: ignore
+    def __init__(self, *iterable, handler: Callable = log_traceback_and_continue):
+        self.iter: Iterable = unpack_iterable(*iterable)
+        self.handler = handler
 
-    def __call__(self, iterable: Iterable[Any]) -> Iterator[Any]:
-        return self._function(iterable)
+    def __call__(self, *iterable: Iterable[Any]) -> Iterable[Any]:
+        yield from unpack_iterable(*iterable)
 
     def __iter__(self):
-        for item in self(self._iterable):
+        for item in self.iter:
             try:
                 yield item
             except Exception as e:
-                self._handler(e)
-
-    def new(self):
-        return Pipe()
+                self.handler(e)
 
     def __or__(self, other: Pipe):
-        new = other.new()
-        new._function = compose(self, other)
-        new._iterable = Chain(self._iterable, other._iterable)
-        new._handler = self._handler
-        return new
+        return Chain(self, other)
 
     def __getattr__(self, name):
         def method(*args, **kwargs):
@@ -115,3 +84,15 @@ class Pipe(metaclass=PipeMeta):
         pipe_name = name or camelcase_to_snakecase(cls.__name__)
         target = target or Pipe
         target._pipes[pipe_name] = cls
+
+
+class Chain(Pipe):
+    def __init__(self, pipe0: Pipe, pipe1: Pipe) -> None:
+        self.pipe0 = pipe0
+        self.pipe1 = pipe1
+
+    def __iter__(self):
+        return self.pipe1(self.pipe0)
+
+    def __call__(self, *items):
+        return self.pipe1(self.pipe0(*items))

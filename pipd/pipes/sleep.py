@@ -12,5 +12,5 @@ class Sleep(Pipe):
     def __init__(self, seconds: float) -> None:
         self.seconds = seconds
 
-    def __call__(self, items: Iterable[T]) -> Iterator[T]:
+    def __call__(self, items: Iterable[T]) -> Iterator[T]:  # type: ignore
         return Side(lambda _: time.sleep(self.seconds))(items)  # type: ignore

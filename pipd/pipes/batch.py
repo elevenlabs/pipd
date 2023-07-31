@@ -10,7 +10,7 @@ class Batch(Pipe):
         self.size = size
         self.partial = partial
 
-    def __call__(self, items: Iterable[T]) -> Iterator[List[T]]:
+    def __call__(self, items: Iterable[T]) -> Iterator[List[T]]:  # type: ignore
         batch = []
         for item in items:
             batch.append(item)

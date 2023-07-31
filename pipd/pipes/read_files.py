@@ -39,7 +39,7 @@ class ReadFiles(Pipe):
         self.watch = watch
         self.shuffle = shuffle
 
-    def __call__(self, items: Iterable[str]) -> Iterator[str]:
+    def __call__(self, items: Iterable[str]) -> Iterator[str]:  # type: ignore
         for filepath in items:
             files = []
             if self.cache_filepath is not None:

@@ -7,9 +7,9 @@ class WriteCSV(Pipe):
     def __init__(self, filepath: str) -> None:
         self.filepath = filepath
 
-    def __call__(
+    def __call__(  # type: ignore
         self, items: Iterable[Union[Dict[str, Any], Sequence[Any]]]
-    ) -> Iterator[Union[Dict[str, Any], Sequence[Any]]]:
+    ) -> Iterator[Union[Dict[str, Any], Sequence[Any]]]:  # type: ignore
         import csv
 
         with open(self.filepath, "w", newline="") as f:

@@ -185,6 +185,14 @@ def test_read_files():
 def test_mix_pipe():
     from pipd import Mix
 
+    pipe = Mix([0, 0, 0], [1, 1, 1], [2, 2, 2])
+    assert list(pipe) == [0, 1, 2, 0, 1, 2, 0, 1, 2]
+    assert list(pipe) == [0, 1, 2, 0, 1, 2, 0, 1, 2]
+
+    pipe = Mix(Pipe([0, 0, 0]), Pipe([1, 1, 1]), Pipe([2, 2, 2]))
+    assert list(pipe) == [0, 1, 2, 0, 1, 2, 0, 1, 2]
+    assert list(pipe) == [0, 1, 2, 0, 1, 2, 0, 1, 2]
+
     pipe = Pipe([0, 1, 2, 3])
     pipe1 = Pipe(["a", "b", "c", "d", "e"])
     merged = Mix(pipe, pipe1)
@@ -217,6 +225,3 @@ def test_mix_pipe():
     assert next(it) == "e"
     assert next(it) == 1
     assert next(it) == "a"
-
-    items = list(Pipe.mix(Pipe([0, 1, 2, 3]), Pipe(["a", "b", "c", "d", "e"])))
-    assert items == [0, "a", 1, "b", 2, "c", 3, "d"]

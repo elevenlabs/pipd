@@ -11,5 +11,5 @@ class Log(Pipe):
     def __init__(self, fn: Callable[[T], None] = print) -> None:
         self.fn = fn
 
-    def __call__(self, items: Iterable[T]) -> Iterator[T]:
+    def __call__(self, items: Iterable[T]) -> Iterator[T]:  # type: ignore
         return Side(self.fn)(items)

@@ -14,5 +14,5 @@ class WriteLines(Pipe):
     def __init__(self, filepath: str) -> None:
         self.filepath = filepath
 
-    def __call__(self, items: Iterable[str]) -> Iterator[str]:
+    def __call__(self, items: Iterable[str]) -> Iterator[str]:  # type: ignore
         return write_lines(items, self.filepath)

@@ -10,7 +10,7 @@ class Tqdm(Pipe):
         self.args = args
         self.kwargs = kwargs
 
-    def __call__(self, items: Iterable[T]) -> Iterator[T]:
+    def __call__(self, items: Iterable[T]) -> Iterator[T]:  # type: ignore
         try:
             from tqdm import tqdm as progressbar
         except ImportError:

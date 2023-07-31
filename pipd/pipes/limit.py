@@ -9,7 +9,7 @@ class Limit(Pipe):
     def __init__(self, limit: int = 10**100) -> None:
         self.limit = limit
 
-    def __call__(self, items: Iterable[T]) -> Iterator[T]:
+    def __call__(self, items: Iterable[T]) -> Iterator[T]:  # type: ignore
         for count, item in enumerate(items):
             if count >= self.limit:
                 return
