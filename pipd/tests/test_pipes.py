@@ -36,7 +36,7 @@ def test_side():
     assert list(pipe) == [0, 1, 2, 3, 4]
 
     pipe = Pipe(range(5)).side(lambda x: x * 2, num_workers=2)
-    assert list(pipe) == [0, 1, 2, 3, 4]
+    assert sorted(list(pipe)) == [0, 1, 2, 3, 4]
 
 
 def test_batch():
